@@ -18,11 +18,12 @@ library("MKinfer")
 library("pracma")
 ```
 
-## Load graphs
+## Load graphs and variables
 
 ```{r}
 savedir = "/home/xin/BrainImaging2016/Brian/savedGraphs"
 g.all.sub = readRDS(file.path(savedir,'g.all.sub.rds'))
+thresholds = seq(.1, .35, .05)
 # only looking at subject level graphs for now, instead of group level graphs
 # g.all.group = readRDS(file.path(savedir,'g.all.group.rds'))
 ```
@@ -57,7 +58,7 @@ dt.g.all.sub.graph$max.frac.comp = dt.g.all.sub.graph[,.(max.comp)] / 264
 source("ComputeAUC.R")
 metrics = list("max.frac.comp", "E.local", "E.global", "Lp", "Cp")
 for(metric in metrics){
-    result = computeAUC(dt.g.all.sub.graph, covars.fmri, thresholds, metric, "SUBJID", small.dt, dt.g.all.sub.graph)
+    result = computeAUC(dt.g.all.sub.graph, covars.fmri, thresholds, metric, "SUBJID")
     AUCResults = merge(AUCResults, result)
 }
 ```
@@ -85,7 +86,7 @@ Compute AUC Results for Small World Statistics
 source("ComputeAUC.R")
 metrics = list("Lp.norm", "Cp.norm", "sigma")
 for(metric in metrics){
-    result = computeAUC(small.dt, covars.fmri, thresholds, metric, "SUBJID", small.dt, dt.g.all.sub.graph)
+    result = computeAUC(small.dt, covars.fmri, thresholds, metric, "SUBJID")
     AUCResults = merge(AUCResults, result)
 }
 ```
@@ -114,6 +115,8 @@ globalPValues[which(adjustedGlobalPValues < .05)]
 
 ### Regional Parameters
 
+We try and compute parameters for each node. This code takes a little longer as it has to loop through each node and then for each subject. The data is not added to the `AUCResults` table but returns a separate list of pvalues that corresponds to the regions.
+
 ### Nodal Global Efficiency
 
 ```{r}
@@ -123,7 +126,7 @@ localResult = computeRegionalAUC(dt.g.all.sub.vertex, covars.fmri, thresholds, "
 degreeResult = computeRegionalAUC(dt.g.all.sub.vertex, covars.fmri, thresholds, "degree")
 ```
 
-We can also check nodal statistics individually. This 
+We can also check nodal statistics individually. This code is primarily used for testing single regional hypotheses.
 
 ```{r}
 source("ComputeSingleRegionAUC.R")

@@ -13,6 +13,9 @@ knitr::opts_chunk$set(echo = TRUE)
 require(data.table)
 ```
 ## Read data
+
+Although the pncData contains over 8000 subjects, not all of them have brain imaging. We need to subset on those subjects who we have rsfmri data for.
+
 ```{r}
 pncData = fread("scores/pyresult01_pnc_behav_mental4.csv")
 allData = fread("scores/AllPreProcessed.csv")
