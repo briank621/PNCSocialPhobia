@@ -1,0 +1,172 @@
+---
+title: "StatisticalAnalyses"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library("brainGraph")
+library("data.table")
+library("MKinfer")
+```
+
+## Load Data
+
+```{r}
+savedir = "/home/xin/BrainImaging2016/Brian/savedGraphs"
+A.all.norm.sub = readRDS(file.path(savedir,'A.all.norm.sub.rds'))
+```
+
+
+## Check Covariates
+
+Check if sex / age are significantly different in two groups
+
+### Sex
+
+```{r}
+spSex = ifelse(covars.fmri[status=='SP']$Sex=="F", 0, 1)
+controlSex = ifelse(covars.fmri[status=='Control']$Sex == "F", 0, 1)
+perm.t.test(spSex, controlSex, R = 10000) # two sample t-test (SP, Control)
+```
+### Age
+
+```{r}
+spAge = as.numeric(covars.fmri[status=='SP']$age_at_cnb)
+controlAge = as.numeric(covars.fmri[status=='Control']$age_at_cnb)
+perm.t.test(spSex, controlSex, R = 10000) # two sample t-test (SP, Control)
+```
+
+## Two Sample T Test for all connections
+
+Two sample t-test on all possible connections to see which functional connections are significantly disrupted. The data is run on the raw values.
+
+**This code takes very long to run (several hours). You can load the pvalues in the block after this.**
+
+```{r}
+subjectStatus = covars.fmri$status
+numSP = length(covars.fmri$status[covars.fmri$status=="SP"])
+numControl = length(covars.fmri$status[covars.fmri$status=="Control"])
+spList = rep(0, numSP)
+controlList = rep(0, numControl)
+n = dim(A.pos.norm.sub[[1]])[3]
+index = 1
+maxIndex = ((264 * 263) / 2)
+pvalues = data.table(p.value=numeric(), region1Name=character(), region2Name=character(), region1Index=numeric(), region2Index=numeric())[1:maxIndex]
+progress = txtProgressBar(min = 0, max = maxIndex, initial = 0, style = 3)
+for(i in 1:264){
+    for(j in 1:264){
+        if(i >= j){
+            next
+        }
+        spCount = 1
+        controlCount = 1
+        for(subject in 1:n){
+            if(subjectStatus[subject] == "Control"){
+                controlList[controlCount] = A.pos.norm.sub[[1]][i,j,subject]
+                controlCount = controlCount + 1
+            }
+            else{
+                spList[spCount] = A.pos.norm.sub[[1]][i,j,subject]
+                spCount = spCount + 1
+            }
+        }     
+        ttest = perm.t.test(spList, controlList, R = 10000)
+        pvalues[index] = list(ttest$perm.p.value, power264$name[i], power264$name[j], i, j)
+        setTxtProgressBar(progress, index)
+        index = index + 1
+    }
+   
+}
+```
+
+Loading the Data from saved RDS
+
+```{r}
+pvalues = readRDS(file.path(savedir,'pvalues.rds'))
+```
+
+
+### Identify Significant Pairings
+
+We will do a FDR (Benjamini Hochberg) correction
+
+```{r}
+adjustedPValues = p.adjust(pvalues$p.value, "fdr")
+pvalues[which(adjustedPValues < .05)]
+```
+
+
+The middle of each confidence interval is extracted to be used as edge weights when backprojecting the edges on BrainNetViewer.
+
+```{r}
+extractConfidence = function(row, A.pos.norm.sub){
+    i = row$region1Index
+    j = row$region2Index
+    spCount = 1
+    controlCount = 1
+    spList = rep(0, numSP)
+    controlList = rep(0, numControl)
+    n = dim(A.pos.norm.sub[[1]])[3]
+    for(subject in 1:n){
+        if(subjectStatus[subject] == "Control"){
+            controlList[controlCount] = A.pos.norm.sub[[1]][i,j,subject]
+            controlCount = controlCount + 1
+        }
+        else{
+            spList[spCount] = A.pos.norm.sub[[1]][i,j,subject]
+            spCount = spCount + 1
+        }
+    }     
+    ttest = perm.t.test(spList, controlList, R = 10000)
+    return ((ttest$perm.conf.int[1] + ttest$perm.conf.int[2]) / 2)
+}
+```
+
+```{r}
+uncorrected = pvalues[p.value < .001]
+confInt = by(uncorrected, seq_len(nrow(uncorrected)), extractConfidence, A.pos.norm.sub)
+```
+
+
+
+
+## Two Sample T-Test for Seed Regions (NOT USED CURRENTLY)
+
+```{r}
+accROI = 212
+ROIEdges = list()
+for(j in 1:264){
+    if(accROI == j){
+        next
+    }
+    spCount = 1
+    controlCount = 1
+    for(subject in 1:n){
+        if(subjectStatus[subject] == "Control"){
+            controlList[controlCount] = A.raw.norm.sub[[1]][accROI,j,subject]
+            controlCount = controlCount + 1
+        }
+        else{
+            spList[spCount] = A.raw.norm.sub[[1]][accROI,j,subject]
+            spCount = spCount + 1
+        }
+    }     
+    ttest = t.test(spList, controlList)
+    #print(ttest$p.value)
+    #allEdges = append(allEdges, list(c(ttest$p.value, i, j)))
+    if(ttest$p.value < .05){
+       print(c(accROI, j))
+       print(power264$Anatomy[c(accROI, j)])
+       ROIEdges = append(significantEdges, list(c(i, j)))
+    }
+}
+
+```
+
+
+
+

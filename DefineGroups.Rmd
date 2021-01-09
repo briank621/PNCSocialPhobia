@@ -1,0 +1,33 @@
+---
+title: "DefineGroups"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Include libraries
+
+```{r}
+require(data.table)
+```
+## Read data
+```{r}
+pncData = fread("scores/pyresult01_pnc_behav_mental4.csv")
+allData = fread("scores/AllPreProcessed.csv")
+subset = pncData[SUBJID %in% allData$SUBJID]
+```
+
+```{r}
+sp = subset[smry_soc>=3&smry_mood_cat<=2&smry_eat_cat<=2&smry_gad<=2&smry_sep<=2&smry_phb<=2&smry_pan<=2&smry_agr<=2&smry_ocd<=2&smry_ptd<=2&smry_psy_cat<=2&smry_beh_cat<=2]
+control = subset[Med_Rating<=1&smry_anx_cat<2&smry_mood_cat<2&smry_eat_cat<2&smry_pan<2&smry_agr<2&smry_ocd<2&smry_ptd<2&smry_psy_cat<2&smry_beh_cat<2]
+
+combined = rbind(sp, control)
+combined = combined[,.(bblid, SUBJID, Sex, age_at_cnb, smry_soc)]
+```
+
+```{r}
+fwrite(combined, file="./scores/Groups.csv")
+```
+

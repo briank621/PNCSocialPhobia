@@ -1,0 +1,191 @@
+---
+title: "GraphAnalyses"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Loading Libraries
+
+```{r}
+library("brainGraph")
+library("data.table")
+library("cairoDevice")
+library("RGtk2")
+library("MKinfer")
+library("pracma")
+```
+
+## Load graphs
+
+```{r}
+savedir = "/home/xin/BrainImaging2016/Brian/savedGraphs"
+g.all.sub = readRDS(file.path(savedir,'g.all.sub.rds'))
+# only looking at subject level graphs for now, instead of group level graphs
+# g.all.group = readRDS(file.path(savedir,'g.all.group.rds'))
+```
+
+## Extract Vertex and Graph Level Metrics into Data Table
+
+```{r}
+dt.g.all.sub.vertex = rbindlist(lapply(g.all.sub, vertex_attr_dt))
+dt.g.all.sub.graph = rbindlist(lapply(g.all.sub, graph_attr_dt))
+#dt.g.all.group.vertex = rbindlist(lapply(g.all.group, vertex_attr_dt))
+#dt.g.all.group.graph = rbindlist(lapply(g.all.group, graph_attr_dt))
+```
+## Computing AUCs
+
+All AUC results will be stored in a single data table 
+
+```{r}
+AUCResults = data.table()
+AUCResults = cbind(AUCResults, covars.fmri[, .(SUBJID, status, smry_soc)])
+AUCResults$rowNumber = 1:nrow(AUCResults)
+```
+
+### Global Parameters
+
+Largest component sizes were computed as a fraction of all possible
+
+```{r}
+dt.g.all.sub.graph$max.frac.comp = dt.g.all.sub.graph[,.(max.comp)] / 264
+```
+
+```{r}
+source("ComputeAUC.R")
+metrics = list("max.frac.comp", "E.local", "E.global", "Lp", "Cp")
+for(metric in metrics){
+    result = computeAUC(dt.g.all.sub.graph, covars.fmri, thresholds, metric, "SUBJID", small.dt, dt.g.all.sub.graph)
+    AUCResults = merge(AUCResults, result)
+}
+```
+
+#### Small World Global Parameters
+
+### Small Worldness
+Computing the small worldness requires generation of random graphs. 
+
+**This code takes a while to run (~ 1hour). As an alternative, load the saved data file, in the code block after this one.**
+
+```{r}
+source("ComputeSmall.R")
+small.dt = computeSmall(g.all.sub, thresholds, 20)
+saveRDS(small.dt, file=file.path(savedir, 'small.dt.rds'), compress='xz')
+```
+
+```{r}
+## Loading precomputed results
+small.dt = readRDS(file.path(savedir,'small.dt.rds'))
+```
+
+Compute AUC Results for Small World Statistics
+```{r}
+source("ComputeAUC.R")
+metrics = list("Lp.norm", "Cp.norm", "sigma")
+for(metric in metrics){
+    result = computeAUC(small.dt, covars.fmri, thresholds, metric, "SUBJID", small.dt, dt.g.all.sub.graph)
+    AUCResults = merge(AUCResults, result)
+}
+```
+
+### Computing PValues for Global Metrics
+
+```{r}
+metrics = list("max.frac.comp", "E.local", "E.global", "Lp", "Cp", "Lp.norm", "Cp.norm", "sigma")
+globalPValues = data.table(p.value=numeric(), metric=character())[1:length(metrics)]
+for(index in 1:length(metrics)){
+    metric = metrics[[index]]
+    spList = AUCResults[status=="SP"][[metric]]
+    controlList = AUCResults[status=="Control"][[metric]]
+    ttest = perm.t.test(spList, controlList, R = 10000) # two sample t-test (SP, Control)
+    globalPValues[index] = list(ttest$perm.p.value, metric)
+}
+```
+
+FDR Correction for all Global Metrics
+
+```{r}
+adjustedGlobalPValues = p.adjust(globalPValues$p.value, "fdr")
+globalPValues[which(adjustedGlobalPValues < .05)]
+```
+
+
+### Regional Parameters
+
+### Nodal Global Efficiency
+
+```{r}
+source("ComputeRegionalAUC.R")
+eNodalResult = computeRegionalAUC(dt.g.all.sub.vertex, covars.fmri, thresholds, "E.nodal")
+localResult = computeRegionalAUC(dt.g.all.sub.vertex, covars.fmri, thresholds, "E.local")
+degreeResult = computeRegionalAUC(dt.g.all.sub.vertex, covars.fmri, thresholds, "degree")
+```
+
+We can also check nodal statistics individually. This 
+
+```{r}
+source("ComputeSingleRegionAUC.R")
+singleAUCResults = data.table()
+singleAUCResults = cbind(AUCResults, covars.fmri[, .(SUBJID, status, smry_soc)])
+singleAUCResults$rowNumber = 1:nrow(AUCResults)
+# Left Posterior Cingulate Gyrus was said to have decreased nodal local efficiency
+regions = c("Cingulum_Post.L1", "Cingulum_Post.L2", "Cingulum_Post.L3", "Cingulum_Post.L4", "Putamen.R1", "Putamen.R2", "Putamen.R3")
+for(region in regions){
+    result = computeSingleRegionAUC(dt.g.all.sub.vertex, region, covars.fmri, thresholds, "E.local");
+    singleAUCResults = merge(singleAUCResults, result)
+}
+```
+
+## Verify that the threshold is appropriate
+
+The density threshold that we use should satisfy two criteria (Zhu et al.)
+1) Average degree over all nodes is larger than 2 * log(n)
+2) Small worldness is larger than 1.1 for all participants
+3) Largest component size should include most of the graph
+
+The current graph we are using is density = .35
+
+### Average Degree
+
+Computing the minimum average degree among all subject graphs. Since the density has been enforced, the average degree is the same for all graphs (92.053), which is higher than 2 * log(264)
+
+```{r}
+validThresholds = list()
+numThresholds = length(thresholds)
+for(i in 1:numThresholds){
+    for(subjectGraph in g.all.sub[[i]]$graphs){
+        subjectDegree = mean(degree(subjectGraph))
+        minDegree = min(minDegree, subjectDegree)
+    }
+    if(minDegree > 2 * log(264)){
+        validThresholds = append(validThresholds, thresholds[i])
+    }
+}
+
+```
+
+### Verification of Small World Statistics
+
+Our density threshold should allow all subjects to have a small-world statistic (sigma) of greater 1.1
+
+```{r}
+small.dt[,.(minSigma = min(sigma), meanSigma = mean(sigma), stdSigma = sd(sigma)),by=.(threshold)]
+```
+This assumption is violated, but the average value is greater than 1.1
+
+### Extracting bad subjects
+
+We can try and remove subjects with sigma < 1. You can always reset covars.fmri to the default by loading covariates in `BrainGraphTest.rmd`.
+
+```{r}
+badSubjects = unique(small.dt[sigma < 1.1], by = "SUBJID")$SUBJID
+covars.fmri = covars.fmri[! SUBJID %in% badSubjects]
+```
+
+## Largest Component Size
+
+```{r}
+dt.g.all.sub.graph[,.(minComp = min(max.comp), meanComp = mean(max.comp), stdComp = sd(max.comp)),by=.(threshold)]
+```

@@ -1,0 +1,83 @@
+---
+title: "VisualizeResults"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Loading Libraries
+
+```{r}
+library(ggplot2)
+library(cowplot)
+```
+
+Center titles
+
+```{r}
+theme_update(plot.title=element_text(hjust=0.5, size=8), axis.text=element_text(size=8), axis.title=element_text(size=8))
+```
+
+
+## Draw ScatterPlots
+
+```{r}
+plotDataColumn = function(data, column){
+    title = paste("AUC of", column)
+    xlabel = "SubjectNumber"
+    ggplot(data, aes_q(x=~rowNumber, color=~status, y=as.name(column))) + geom_point() + ggtitle(title) + xlab(xlabel) + ylab(title)
+}
+```
+
+
+```{r}
+set.seed(42)
+rows = sample(nrow(AUCResults))
+# I am shuffling the rows so that the controls and SP subjects are interleaved with one another instead of appearing in separate clumps. If you want to see the data with the original subject numbers, pass in AUCResults instead of shuffledRows
+shuffledRows = AUCResults[rows, ]
+shuffledRows$rowNumber = 1:nrow(shuffledRows)
+metrics = list( "E.local", "Cp", "Lp", "Lp.norm")
+plots = lapply(metrics, plotDataColumn, data=shuffledRows)
+plot_grid(plots[[1]], plots[[2]], plots[[3]], plots[[4]], ncol=2)
+```
+
+## Bar plot with errors
+
+```{r}
+longAUC = melt(AUCResults, id.vars=c("SUBJID", "status", "rowNumber", "smry_soc"))
+groupedAUC = longAUC[,.(AUC=mean(value), stdev=sd(value)), by=.(status, variable)]
+ggplot(groupedAUC, aes(x=variable, y=AUC, fill=status)) + geom_bar( stat="identity", color="black", position=position_dodge()) + geom_errorbar(aes(ymin=AUC-stdev, ymax=AUC+stdev), width=.2, position=position_dodge(0.9))
+```
+
+
+## Draw Boxplots
+
+```{r}
+plotBox = function(data, column){
+    title = paste("AUC of", column)
+    spList = data[status=="SP"][[column]]
+    controlList = data[status=="Control"][[column]]
+    ggplot(data, aes_q(x=~status, y=as.name(column))) + geom_boxplot(notch=TRUE, show.legend=FALSE) +
+    xlab("status") + ylab(title)
+}
+```
+
+
+```{r}
+data = covars.fmri
+column = "age_at_cnb"
+title = paste("AUC of", column)
+spList = data[status=="SP"][[column]]
+controlList = data[status=="Control"][[column]]
+ggplot(data, aes_q(x=~age_at_cnb, color=~status)) + geom_histogram(fill="white", bins=10) + xlab("status") + ylab(title)
+```
+
+
+```{r}
+metrics = list( "E.local", "Cp", "Lp", "Lp.norm")
+boxes = lapply(metrics, plotBox, data=AUCResults)
+plot_grid(boxes[[1]], boxes[[2]], boxes[[3]], boxes[[4]], ncol=2)
+```
+

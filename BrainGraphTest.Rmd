@@ -1,0 +1,82 @@
+---
+title: "Setting up fMRI graphs"
+output: html_notebook
+---
+
+## Loading Libraries
+
+```{r}
+library("brainGraph")
+library("data.table")
+library("cairoDevice")
+library("RGtk2")
+```
+## Set global variables
+```{r}
+options(bg.subject_id="SUBJID", bg.group="status")
+```
+
+
+## Loading Covariates
+
+```{r}
+datadir = '/home/xin/BrainImaging2016/Brian'
+covars.all = fread(file.path(datadir, '/scores/Groups.csv'))
+covars.fmri = covars.all
+covars.fmri$SUBJID = as.character(covars.fmri$SUBJID)
+covars.fmri$Sex = as.factor(covars.fmri$Sex)
+covars.fmri$status = ifelse(covars.fmri$smry >= 3, "SP", "Control")
+setkey(covars.fmri, SUBJID)
+```
+
+## Loading data files
+I am reading in data directly from the DPARSF result folders.
+As a result, I need to know the path of each subject so the initial code searches for the ROICorrelation file of each subject.
+When the code is finished, matfiles contains a list of each file path.
+```{r}
+subjectPaths = rep(NA, length(covars.fmri$SUBJID))
+count = 1
+for (subjectID in covars.fmri$SUBJID){
+    subjectPaths[count] = paste(datadir, '/datafiles/ROICorrelation_FisherZ_sub_', subjectID, '.txt', sep='')
+    count = count + 1
+}
+matfiles = list(A=subjectPaths)
+```
+
+## Creating Connectivity Matrices
+We are importing the correlation matrices. The create_mats function allows us to normalize and filter these matrices.
+I am using a density threshold to ensure a common graph density among all subjects
+
+A.norm.sub[[1]] is a 264x264x(numSubjects) array which contains each connectivity matrix for each subject
+A.norm.mean is the 264x264x2 array which contains the group averages
+```{r}
+groups = c('Control', 'SP')
+inds = lapply(groups, function(x) covars.fmri[status == x, which=TRUE])
+modality <- 'fmri'
+thresholds = seq(.1, .35, .05)
+my.all.mats <- create_mats(matfiles$A, modality=modality, threshold.by='density', mat.thres=thresholds, inds = inds)
+A.all.norm.sub <- my.all.mats$A.norm.sub
+A.all.norm.mean <- my.all.mats$A.norm.mean
+A.all.bin.sub = A.all.norm.sub
+A.all.bin.mean = A.all.norm.mean
+# The matrix must be binarized before passing in
+for(i in 1:length(thresholds)){
+    A.all.bin.sub[[i]][A.all.bin.sub[[i]] > 0] = 1
+    A.all.bin.mean[[i]][A.all.bin.mean[[i]] > 0] = 1
+    
+}
+saveRDS(A.all.norm.sub, file=file.path(savedir, 'A.all.norm.sub.rds'), compress='xz')
+```
+
+## Creating Graphs
+
+```{r}
+source("CreateGraphs.R")
+
+g.all = createGraphs(A.all.bin.sub, A.all.bin.mean, thresholds, covars)
+g.all.sub = g.all[1:length(thresholds)]
+g.all.group = g.all[-(1:length(thresholds))]
+savedir = "/home/xin/BrainImaging2016/Brian/savedGraphs"
+saveRDS(g.all.sub, file=file.path(savedir, 'g.all.sub.rds'), compress='xz')
+saveRDS(g.all.group, file=file.path(savedir, 'g.all.group.rds'), compress='xz')
+```
