@@ -20,12 +20,11 @@ options(bg.subject_id="SUBJID", bg.group="status")
 ## Loading Covariates
 
 ```{r}
-datadir = '/Users/brian/Documents/classes/quantitativepsych/PNCSocialPhobia'
+datadir = '/home/xin/BrainImaging2016/Brian'
 covars.all = fread(file.path(datadir, '/scores/Groups.csv'))
 covars.fmri = covars.all
 covars.fmri$SUBJID = as.character(covars.fmri$SUBJID)
 covars.fmri$Sex = as.factor(covars.fmri$Sex)
-covars.fmri$status = ifelse(covars.fmri$smry >= 3, "SP", "Control")
 setkey(covars.fmri, SUBJID)
 ```
 
@@ -50,7 +49,7 @@ I am using a density threshold to ensure a common graph density among all subjec
 A.norm.sub[[1]] is a 264x264x(numSubjects) array which contains each connectivity matrix for each subject
 A.norm.mean is the 264x264x2 array which contains the group averages
 ```{r}
-groups = c('Control', 'SP')
+groups = c('Control', 'SP', 'SPADHD')
 inds = lapply(groups, function(x) covars.fmri[status == x, which=TRUE])
 modality <- 'fmri'
 thresholds = seq(.1, .35, .05)
