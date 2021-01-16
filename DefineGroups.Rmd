@@ -11,6 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r}
 require(data.table)
+require(VennDiagram)
 ```
 ## Read data
 
@@ -22,6 +23,7 @@ allData = fread("scores/AllPreProcessed.csv")
 subset = pncData[SUBJID %in% allData$SUBJID]
 ```
 
+No comorbidities
 ```{r}
 sp = subset[smry_soc>=3&smry_mood_cat<=2&smry_eat_cat<=2&smry_gad<=2&smry_sep<=2&smry_phb<=2&smry_pan<=2&smry_agr<=2&smry_ocd<=2&smry_ptd<=2&smry_psy_cat<=2&smry_beh_cat<=2]
 control = subset[Med_Rating<=1&smry_anx_cat<2&smry_mood_cat<2&smry_eat_cat<2&smry_pan<2&smry_agr<2&smry_ocd<2&smry_ptd<2&smry_psy_cat<2&smry_beh_cat<2]
@@ -29,6 +31,19 @@ control = subset[Med_Rating<=1&smry_anx_cat<2&smry_mood_cat<2&smry_eat_cat<2&smr
 combined = rbind(sp, control)
 combined = combined[,.(bblid, SUBJID, Sex, age_at_cnb, smry_soc)]
 ```
+
+Look at different comorbidities
+```{r}
+spADHD = subset[smry_soc>=3&smry_add>=3]
+spSpecificPhobia = subset[smry_soc>=3&smry_phb>=3]
+spDepression = subset[smry_soc>=3&smry_dep>=3]
+spODD = subset[smry_soc>=3&smry_odd>=3]
+
+spTest = subset[smry_soc>=3&smry_add>=3&smry_phb>=3&smry_dep>=3&smry_odd>=3]
+venn.diagram(x = list(spADHD$SUBJID, spSpecificPhobia$SUBJID, spDepression$SUBJID, spODD$SUBJID), 
+             category.names=c("SP+ADHD", "SP+SpecificPhobia", "SP+Depression", "SP+ODD"), filename='VennDiagram.png', output=TRUE, imagetype="png", height = 1000 , width = 2500 , resolution = 300,)
+```
+
 
 ```{r}
 fwrite(combined, file="./scores/Groups.csv")

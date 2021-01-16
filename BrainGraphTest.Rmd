@@ -20,7 +20,7 @@ options(bg.subject_id="SUBJID", bg.group="status")
 ## Loading Covariates
 
 ```{r}
-datadir = '/home/xin/BrainImaging2016/Brian'
+datadir = '/Users/brian/Documents/classes/quantitativepsych/PNCSocialPhobia'
 covars.all = fread(file.path(datadir, '/scores/Groups.csv'))
 covars.fmri = covars.all
 covars.fmri$SUBJID = as.character(covars.fmri$SUBJID)
