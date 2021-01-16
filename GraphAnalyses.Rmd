@@ -16,6 +16,7 @@ library("cairoDevice")
 library("RGtk2")
 library("MKinfer")
 library("pracma")
+library("permuco")
 ```
 
 ## Load graphs and variables
@@ -42,7 +43,7 @@ All AUC results will be stored in a single data table
 
 ```{r}
 AUCResults = data.table()
-AUCResults = cbind(AUCResults, covars.fmri[, .(SUBJID, status, smry_soc)])
+AUCResults = cbind(AUCResults, covars.fmri[, .(SUBJID, status, smry_soc, age_at_cnb, Sex)])
 AUCResults$rowNumber = 1:nrow(AUCResults)
 ```
 
@@ -81,6 +82,7 @@ saveRDS(small.dt, file=file.path(savedir, 'small.dt.rds'), compress='xz')
 small.dt = readRDS(file.path(savedir,'small.dt.rds'))
 ```
 
+
 Compute AUC Results for Small World Statistics
 ```{r}
 source("ComputeAUC.R")
@@ -112,6 +114,24 @@ adjustedGlobalPValues = p.adjust(globalPValues$p.value, "fdr")
 globalPValues[which(adjustedGlobalPValues < .05)]
 ```
 
+### ANCOVA
+
+Try ANCOVA with age as a nuisance variable
+
+```{r}
+## Centering covariate to the mean
+metrics = list("max.frac.comp", "E.local", "E.global", "Lp", "Cp", "Lp.norm", "Cp.norm", "sigma")
+AUCResults$age_centered = scale(AUCResults$age_at_cnb, scale = FALSE)
+ancovaPValues = data.table(p.value=numeric(), metric=character())[1:length(metrics)]
+for(index in 1:length(metrics)){
+    metric = metrics[[index]]
+    formula = paste(metric, '~age_at_cnb+status+Sex',sep = '')
+    result = aovperm(as.formula(formula), data=AUCResults, np = 10000)
+    ancovaPValues[index] = list(result$table[['permutation P(>F)']][2], metric)
+}
+
+
+```
 
 ### Regional Parameters
 
