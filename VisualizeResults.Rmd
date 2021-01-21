@@ -81,3 +81,21 @@ boxes = lapply(metrics, plotBox, data=AUCResults)
 plot_grid(boxes[[1]], boxes[[2]], boxes[[3]], boxes[[4]], ncol=2)
 ```
 
+## Draw Histograms of Different Regions
+
+```{r}
+regions = c()
+for (i in 1:nrow(uncorrected)){
+    regions[2*(i-1) + 1] = as.character(power264[uncorrected[i]$region1Index]$network)
+    regions[2*(i-1) + 2] = as.character(power264[uncorrected[i]$region2Index]$network)
+}
+```
+
+```{r}
+ggplot(data.frame(regions), aes(x=regions)) + geom_bar() + theme(axis.text.x = element_text(size=8, angle=90, hjust=1))
+```
+
+```{r}
+plotBox(singleAUCResults, "E.nodal_Occipital_Mid.L2")
+```
+

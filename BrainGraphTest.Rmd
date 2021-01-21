@@ -21,6 +21,7 @@ options(bg.subject_id="SUBJID", bg.group="status")
 
 ```{r}
 datadir = '/home/xin/BrainImaging2016/Brian'
+savedir = "/home/xin/BrainImaging2016/Brian/savedGraphs"
 covars.all = fread(file.path(datadir, '/scores/Groups.csv'))
 covars.fmri = covars.all
 covars.fmri$SUBJID = as.character(covars.fmri$SUBJID)
@@ -33,6 +34,7 @@ I am reading in data directly from the DPARSF result folders.
 As a result, I need to know the path of each subject so the initial code searches for the ROICorrelation file of each subject.
 When the code is finished, matfiles contains a list of each file path.
 ```{r}
+#covars.fmri = covars.fmri[status!='SPADHD']
 subjectPaths = rep(NA, length(covars.fmri$SUBJID))
 count = 1
 for (subjectID in covars.fmri$SUBJID){
@@ -49,7 +51,8 @@ I am using a density threshold to ensure a common graph density among all subjec
 A.norm.sub[[1]] is a 264x264x(numSubjects) array which contains each connectivity matrix for each subject
 A.norm.mean is the 264x264x2 array which contains the group averages
 ```{r}
-groups = c('Control', 'SP', 'SPADHD')
+#groups = c('Control', 'SP', 'SPADHD')
+groups = c('SPADHD')
 inds = lapply(groups, function(x) covars.fmri[status == x, which=TRUE])
 modality <- 'fmri'
 thresholds = seq(.1, .35, .05)
@@ -64,8 +67,19 @@ for(i in 1:length(thresholds)){
     A.all.bin.mean[[i]][A.all.bin.mean[[i]] > 0] = 1
     
 }
-saveRDS(A.all.norm.sub, file=file.path(savedir, 'A.all.norm.sub.rds'), compress='xz')
+saveRDS(A.all.norm.sub, file=file.path(savedir, 'ADHD.A.all.norm.sub.rds'), compress='xz')
 ```
+
+```{r}
+groups = c('Control', 'SP', 'SPADHD')
+#groups = c('SPADHD')
+inds = lapply(groups, function(x) covars.fmri[status == x, which=TRUE])
+modality <- 'fmri'
+thresholds = seq(.1, .35, .05)
+my.all.mats <- create_mats(matfiles$A, modality=modality, threshold.by='raw', mat.thres=c(-1.1), inds = inds)
+A.pos.norm.sub <- my.all.mats$A.norm.sub
+```
+
 
 ## Creating Graphs
 
@@ -76,6 +90,6 @@ g.all = createGraphs(A.all.bin.sub, A.all.bin.mean, thresholds, covars)
 g.all.sub = g.all[1:length(thresholds)]
 g.all.group = g.all[-(1:length(thresholds))]
 savedir = "/home/xin/BrainImaging2016/Brian/savedGraphs"
-saveRDS(g.all.sub, file=file.path(savedir, 'g.all.sub.rds'), compress='xz')
-saveRDS(g.all.group, file=file.path(savedir, 'g.all.group.rds'), compress='xz')
+saveRDS(g.all.sub, file=file.path(savedir, 'ADHD.g.all.sub.rds'), compress='xz')
+saveRDS(g.all.group, file=file.path(savedir, 'ADHD.g.all.group.rds'), compress='xz')
 ```

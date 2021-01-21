@@ -4,7 +4,7 @@ computeRegionalAUC = function(dt.g.all.sub.vertex, covars.fmri, thresholds, metr
     # regional metrics (nodal efficiency, nodal degree) between SP and Control Groups
     
     subjectStatus = covars.fmri[,.(SUBJID, status)]
-    numSP = subjectStatus[,sum(status == "SP")]
+    numSP = subjectStatus[,sum(status == "SP" | status == "SPADHD")]
     numControl = subjectStatus[,sum(status == "Control")]
     
     numThres = length(thresholds)
@@ -28,14 +28,18 @@ computeRegionalAUC = function(dt.g.all.sub.vertex, covars.fmri, thresholds, metr
             #print(auc)
             #print(subjectID)
             #print(subjectResult)
-            if(subjectStatus[row]$status == "SP"){
+            if(subjectStatus[row]$status == "SP" || subjectStatus[row]$status == "SPADHD"){
                 spList[spCount] = auc
                 spCount = spCount + 1
             }
+            #else if(subjectStatus[row]$status == "SPADHD"){
             else{
                 controlList[controlCount] = auc
                 controlCount = controlCount + 1
             }
+            #else{
+            #    next
+            #}
         }
         #print("before perm")
         #print(spList)

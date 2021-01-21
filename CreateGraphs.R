@@ -1,8 +1,10 @@
 createGraphs = function(subjectMat, groupMat, thresholds, covars){
     atlas = 'power264'
     modality = 'fmri'
-    groups = c('Control', 'SP')
+    #groups = c('Control', 'SP')
+    groups = c('SPADHD')
     g = vector('list', length(thresholds))
+    g.group = vector('list', length(thresholds))
     
     for (j in seq_along(thresholds)) {
         #print(dim(subjectMat[[j]]))

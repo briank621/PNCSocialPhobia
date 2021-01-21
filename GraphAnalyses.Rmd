@@ -29,6 +29,14 @@ thresholds = seq(.1, .35, .05)
 # g.all.group = readRDS(file.path(savedir,'g.all.group.rds'))
 ```
 
+Combining different datatables
+```{r}
+dt.g.all.sub.graph = rbind(dt.g.all.sub.graph, rbindlist(lapply(readRDS(file.path(savedir,'ADHD.g.all.sub.rds')), graph_attr_dt)))
+small.dt = rbind(small.dt, readRDS(file.path(savedir,'adhd.small.dt.rds')))
+dt.g.all.sub.vertex = rbind(dt.g.all.sub.vertex, rbindlist(lapply(readRDS(file.path(savedir,'ADHD.g.all.sub.rds')), vertex_attr_dt)))
+```
+
+
 ## Extract Vertex and Graph Level Metrics into Data Table
 
 ```{r}
@@ -74,7 +82,7 @@ Computing the small worldness requires generation of random graphs.
 ```{r}
 source("ComputeSmall.R")
 small.dt = computeSmall(g.all.sub, thresholds, 20)
-saveRDS(small.dt, file=file.path(savedir, 'small.dt.rds'), compress='xz')
+saveRDS(small.dt, file=file.path(savedir, 'adhd.small.dt.rds'), compress='xz')
 ```
 
 ```{r}
@@ -100,7 +108,7 @@ metrics = list("max.frac.comp", "E.local", "E.global", "Lp", "Cp", "Lp.norm", "C
 globalPValues = data.table(p.value=numeric(), metric=character())[1:length(metrics)]
 for(index in 1:length(metrics)){
     metric = metrics[[index]]
-    spList = AUCResults[status=="SP"][[metric]]
+    spList = AUCResults[status=="SPADHD" | status=="SP"][[metric]]
     controlList = AUCResults[status=="Control"][[metric]]
     ttest = perm.t.test(spList, controlList, R = 10000) # two sample t-test (SP, Control)
     globalPValues[index] = list(ttest$perm.p.value, metric)
@@ -150,15 +158,17 @@ We can also check nodal statistics individually. This code is primarily used for
 
 ```{r}
 source("ComputeSingleRegionAUC.R")
-singleAUCResults = data.table()
-singleAUCResults = cbind(AUCResults, covars.fmri[, .(SUBJID, status, smry_soc)])
+singleAUCResults =covars.fmri[, .(SUBJID, status, smry_soc)]
 singleAUCResults$rowNumber = 1:nrow(AUCResults)
 # Left Posterior Cingulate Gyrus was said to have decreased nodal local efficiency
-regions = c("Cingulum_Post.L1", "Cingulum_Post.L2", "Cingulum_Post.L3", "Cingulum_Post.L4", "Putamen.R1", "Putamen.R2", "Putamen.R3")
+regions = c("Occipital_Mid.L2")
 for(region in regions){
-    result = computeSingleRegionAUC(dt.g.all.sub.vertex, region, covars.fmri, thresholds, "E.local");
-    singleAUCResults = merge(singleAUCResults, result)
+    result = computeSingleRegionAUC(dt.g.all.sub.vertex, region, covars.fmri, thresholds, "E.nodal");
+    singleAUCResults = merge(singleAUCResults, result, by=c("SUBJID"))
 }
+spList = singleAUCResults[status=="SP"][["E.nodal_Occipital_Mid.L2"]]
+controlList = singleAUCResults[status=="SPADHD"][["E.nodal_Occipital_Mid.L2"]]
+ttest = perm.t.test(spList, controlList, R = 10000) # two sample t-test (SP, Control)
 ```
 
 ## Verify that the threshold is appropriate
