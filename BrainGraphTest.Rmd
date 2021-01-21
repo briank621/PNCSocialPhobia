@@ -8,8 +8,6 @@ output: html_notebook
 ```{r}
 library("brainGraph")
 library("data.table")
-library("cairoDevice")
-library("RGtk2")
 ```
 ## Set global variables
 ```{r}
@@ -20,8 +18,8 @@ options(bg.subject_id="SUBJID", bg.group="status")
 ## Loading Covariates
 
 ```{r}
-datadir = '/home/xin/BrainImaging2016/Brian'
-savedir = "/home/xin/BrainImaging2016/Brian/savedGraphs"
+datadir = '/Users/brian/Documents/classes/quantitativepsych/PNCSocialPhobia'
+savedir = "/Users/brian/Documents/classes/quantitativepsych/PNCSocialPhobia/savedGraphs"
 covars.all = fread(file.path(datadir, '/scores/Groups.csv'))
 covars.fmri = covars.all
 covars.fmri$SUBJID = as.character(covars.fmri$SUBJID)
