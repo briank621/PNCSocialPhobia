@@ -12,8 +12,6 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r}
 library("brainGraph")
 library("data.table")
-library("cairoDevice")
-library("RGtk2")
 library("MKinfer")
 library("pracma")
 library("permuco")
@@ -22,11 +20,13 @@ library("permuco")
 ## Load graphs and variables
 
 ```{r}
-savedir = "/home/xin/BrainImaging2016/Brian/savedGraphs"
+savedir = "/Users/brian/Documents/classes/quantitativepsych/PNCSocialPhobia/savedGraphs"
 g.all.sub = readRDS(file.path(savedir,'g.all.sub.rds'))
 thresholds = seq(.1, .35, .05)
 # only looking at subject level graphs for now, instead of group level graphs
 # g.all.group = readRDS(file.path(savedir,'g.all.group.rds'))
+dt.g.all.sub.graph = rbindlist(lapply(g.all.sub, graph_attr_dt))
+dt.g.all.sub.vertex = rbindlist(lapply(g.all.sub, vertex_attr_dt))
 ```
 
 Combining different datatables
@@ -67,7 +67,7 @@ dt.g.all.sub.graph$max.frac.comp = dt.g.all.sub.graph[,.(max.comp)] / 264
 source("ComputeAUC.R")
 metrics = list("max.frac.comp", "E.local", "E.global", "Lp", "Cp")
 for(metric in metrics){
-    result = computeAUC(dt.g.all.sub.graph, covars.fmri, thresholds, metric, "SUBJID")
+    result = computeAUC(dt.g.all.sub.graph, covars.fmri, thresholds, metric, "Study.ID")
     AUCResults = merge(AUCResults, result)
 }
 ```

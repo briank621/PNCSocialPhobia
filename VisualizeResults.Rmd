@@ -46,9 +46,10 @@ plot_grid(plots[[1]], plots[[2]], plots[[3]], plots[[4]], ncol=2)
 ## Bar plot with errors
 
 ```{r}
-longAUC = melt(AUCResults, id.vars=c("SUBJID", "status", "rowNumber", "smry_soc"))
-groupedAUC = longAUC[,.(AUC=mean(value), stdev=sd(value)), by=.(status, variable)]
+longAUC = melt(AUCResults, id.vars=c("SUBJID", "status", "rowNumber", "smry_soc", "Sex", "age_at_cnb"))
+groupedAUC = longAUC[,list(AUC=mean(value), stdev=sd(value)), by=list(status, variable)]
 ggplot(groupedAUC, aes(x=variable, y=AUC, fill=status)) + geom_bar( stat="identity", color="black", position=position_dodge()) + geom_errorbar(aes(ymin=AUC-stdev, ymax=AUC+stdev), width=.2, position=position_dodge(0.9))
+ggsave(file.path(plotPath, 'BarPlots.png'))
 ```
 
 
@@ -84,15 +85,49 @@ plot_grid(boxes[[1]], boxes[[2]], boxes[[3]], boxes[[4]], ncol=2)
 ## Draw Histograms of Different Regions
 
 ```{r}
-regions = c()
+regions.dt = data.table(status=character(), anatomy=character(), network=character())
+```
+
+
+```{r}
+region.dt = data.table(status=character(), anatomy=character(), network=character())
 for (i in 1:nrow(uncorrected)){
-    regions[2*(i-1) + 1] = as.character(power264[uncorrected[i]$region1Index]$network)
-    regions[2*(i-1) + 2] = as.character(power264[uncorrected[i]$region2Index]$network)
+    region.dt = rbind(region.dt, list("All SP v Control", power264[uncorrected[i]$region1Index]$Anatomy, power264[uncorrected[i]$region1Index]$network))
+    region.dt = rbind(region.dt, list("All SP v Control", power264[uncorrected[i]$region2Index]$Anatomy, power264[uncorrected[i]$region2Index]$network))
+}
+regions.dt = rbind(regions.dt, region.dt)
+```
+
+```{r}
+saveRDS(regions.dt, file=file.path(savedir, 'regions.dt.rds'), compress='xz')
+```
+
+```{r}
+int_breaks <- function(x, n = 5) {
+  l <- pretty(x, n)
+  l[abs(l %% 1) < .Machine$double.eps ^ 0.5] 
+}
+```
+
+
+```{r}
+plotRegionBarGraph = function(data, column){
+    title = column
+    subset = data[status==column]
+    ggplot(subset, aes(x=anatomy)) + geom_bar() + theme(axis.text.x = element_text(size=5, angle=90, hjust=1)) + ggtitle(title) + xlab("") + ylab("Number of Connections (p < .001 uncorrected)") + scale_y_continuous(breaks = int_breaks)
 }
 ```
 
 ```{r}
-ggplot(data.frame(regions), aes(x=regions)) + geom_bar() + theme(axis.text.x = element_text(size=8, angle=90, hjust=1))
+comparisons = list( "All SP v Control", "Pure SP v HC", "SP + ADHD v HC", "Pure SP v SP + ADHD")
+plots = lapply(comparisons, plotRegionBarGraph, data=regions.dt)
+combinedPlots = plot_grid(plots[[1]], plots[[2]], plots[[3]], plots[[4]], ncol=2)
+#plotRegionBarGraph(regions.dt, "All SP v Control")
+plotPath = "/Users/brian/Documents/classes/quantitativepsych/rsfmri/Plots/"
+ggsave(file.path(plotPath, '/Anatomy/Combined.png'))
+```
+
+```{r}
 plotPath = "/Users/brian/Documents/classes/quantitativepsych/rsfmri/Plots/"
 ggsave(file.path(plotPath, '/Networks/AllSPvControl.png'))
 ```
