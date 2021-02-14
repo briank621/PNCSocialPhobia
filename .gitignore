@@ -1,3 +1,10 @@
 *.nb.html
 VennDiagram.png
 .Rproj.user
+.RData
+.Rhistory
+Result04_DPSAF1
+Result04_DPSAF2
+Result04_DPSAF3
+Result04_DPSAF4
+Result04_DPSAF5
