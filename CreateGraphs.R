@@ -1,8 +1,7 @@
-createGraphs = function(subjectMat, groupMat, thresholds, covars){
-    atlas = 'power264'
+createGraphs = function(subjectMat, groupMat, thresholds, covars, atlas){
     modality = 'fmri'
-    #groups = c('Control', 'SP')
-    groups = c('SPADHD')
+    groups = c('Control', 'SP', 'SPADHD')
+    #groups = c('SPADHD')
     g = vector('list', length(thresholds))
     g.group = vector('list', length(thresholds))
     
@@ -12,8 +11,8 @@ createGraphs = function(subjectMat, groupMat, thresholds, covars){
         g[[j]] <- make_brainGraphList(subjectMat[[j]], atlas, modality=modality,
                                       gnames=covars.fmri$SUBJID, grpNames=covars.fmri$status,
                                       weighted=NULL, threshold=thresholds[j], diag=FALSE)
-        g.group[[j]] <- make_brainGraphList(groupMat[[j]], atlas, modality=modality, threshold=thresholds[j],
-                                                gnames=groups)
+        #g.group[[j]] <- make_brainGraphList(groupMat[[j]], atlas, modality=modality, threshold=thresholds[j],
+                                               # gnames=groups)
     }
     
     return(c(g, g.group))

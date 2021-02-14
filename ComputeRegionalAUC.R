@@ -1,17 +1,17 @@
-computeRegionalAUC = function(dt.g.all.sub.vertex, covars.fmri, thresholds, metric){
+computeRegionalAUC = function(dt.g.all.sub.vertex, covars.fmri, thresholds, controlGroup, experimentalGroup, metric){
     
     # This function computes differences in
     # regional metrics (nodal efficiency, nodal degree) between SP and Control Groups
     
     subjectStatus = covars.fmri[,.(SUBJID, status)]
-    numSP = subjectStatus[,sum(status == "SP" | status == "SPADHD")]
-    numControl = subjectStatus[,sum(status == "Control")]
+    numSP = length(experimentalGroup)
+    numControl = length(controlGroup)
     
     numThres = length(thresholds)
-    pvalues = rep(NA, 264)
-    progress = txtProgressBar(min = 0, max = 264, initial = 0, style = 3)
-    for(nodei in 1:264){
-        nodeName = power264[nodei]$name
+    pvalues = rep(NA, 116)
+    progress = txtProgressBar(min = 0, max = 116, initial = 0, style = 3)
+    for(nodei in 1:116){
+        nodeName = aal116[nodei]$name
         spList = rep(NA, numSP)
         controlList = rep(NA, numControl)
         spCount = 1
@@ -25,28 +25,16 @@ computeRegionalAUC = function(dt.g.all.sub.vertex, covars.fmri, thresholds, metr
                                                            threshold == checkThreshold][[metric]]
             }
             auc = trapz(thresholds, subjectResult)
-            #print(auc)
-            #print(subjectID)
-            #print(subjectResult)
-            if(subjectStatus[row]$status == "SP" || subjectStatus[row]$status == "SPADHD"){
+            if(is.element(row, experimentalGroup)){
                 spList[spCount] = auc
                 spCount = spCount + 1
             }
-            #else if(subjectStatus[row]$status == "SPADHD"){
-            else{
+            else if(is.element(row, controlGroup)){
                 controlList[controlCount] = auc
                 controlCount = controlCount + 1
             }
-            #else{
-            #    next
-            #}
         }
-        #print("before perm")
-        #print(spList)
-        #print(controlList)
-        #print(length(spList))
         result = perm.t.test(spList, controlList, R = 10000)
-        #print("after perm")
         pvalues[nodei] = result$perm.p.value
         setTxtProgressBar(progress, nodei)
     }

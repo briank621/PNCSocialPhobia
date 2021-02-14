@@ -20,6 +20,12 @@ Center titles
 theme_update(plot.title=element_text(hjust=0.5, size=8), axis.text=element_text(size=8), axis.title=element_text(size=8))
 ```
 
+Specify Prefix for filenames
+```{r}
+plotPath = paste(getwd(), '/plots', sep='')
+prefix = "AAL_"
+```
+
 
 ## Draw ScatterPlots
 
@@ -49,7 +55,7 @@ plot_grid(plots[[1]], plots[[2]], plots[[3]], plots[[4]], ncol=2)
 longAUC = melt(AUCResults, id.vars=c("SUBJID", "status", "rowNumber", "smry_soc", "Sex", "age_at_cnb"))
 groupedAUC = longAUC[,list(AUC=mean(value), stdev=sd(value)), by=list(status, variable)]
 ggplot(groupedAUC, aes(x=variable, y=AUC, fill=status)) + geom_bar( stat="identity", color="black", position=position_dodge()) + geom_errorbar(aes(ymin=AUC-stdev, ymax=AUC+stdev), width=.2, position=position_dodge(0.9))
-ggsave(file.path(plotPath, 'BarPlots.png'))
+ggsave(file.path(plotPath, paste(prefix, 'BarPlots.png', sep="")))
 ```
 
 
@@ -80,6 +86,7 @@ ggplot(data, aes_q(x=~age_at_cnb, color=~status)) + geom_histogram(fill="white",
 metrics = list( "E.local", "Cp", "Lp", "Lp.norm")
 boxes = lapply(metrics, plotBox, data=AUCResults)
 plot_grid(boxes[[1]], boxes[[2]], boxes[[3]], boxes[[4]], ncol=2)
+ggsave(file.path(plotPath, paste(prefix, 'BoxPlots.png', sep="")))
 ```
 
 ## Draw Histograms of Different Regions
@@ -119,6 +126,14 @@ plotRegionBarGraph = function(data, column){
 ```
 
 ```{r}
+plotLobesBarGraph = function(data, column){
+    title = column
+    subset = data[status==column]
+    ggplot(subset, aes(x=lobe)) + geom_bar() + theme(axis.text.x = element_text(size=5, angle=90, hjust=1)) + ggtitle(title) + xlab("") + ylab("Number of Connections (p < .001 uncorrected)") + scale_y_continuous(breaks = int_breaks)
+}
+```
+
+```{r}
 comparisons = list( "All SP v Control", "Pure SP v HC", "SP + ADHD v HC", "Pure SP v SP + ADHD")
 plots = lapply(comparisons, plotRegionBarGraph, data=regions.dt)
 combinedPlots = plot_grid(plots[[1]], plots[[2]], plots[[3]], plots[[4]], ncol=2)
@@ -134,5 +149,15 @@ ggsave(file.path(plotPath, '/Networks/AllSPvControl.png'))
 
 ```{r}
 plotBox(singleAUCResults, "E.nodal_Occipital_Mid.L2")
+```
+
+---
+
+## Create adjacency matrices for Brainnet
+
+```{r}
+source("GenerateBrainnetViewer.R")
+groupings = c("HCvALLSP.edge", "HCvPSP.edge", "HCvADHD.edge", "ADHDvPSP.edge")
+generateBrainnetViewer(numberNodes, regions.dt, filePath)
 ```
 

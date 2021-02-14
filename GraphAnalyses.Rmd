@@ -21,7 +21,7 @@ library("permuco")
 
 ```{r}
 savedir = "/Users/brian/Documents/classes/quantitativepsych/PNCSocialPhobia/savedGraphs"
-g.all.sub = readRDS(file.path(savedir,'g.all.sub.rds'))
+g.all.sub = readRDS(file.path(savedir,'AAL.g.all.sub.rds'))
 thresholds = seq(.1, .35, .05)
 # only looking at subject level graphs for now, instead of group level graphs
 # g.all.group = readRDS(file.path(savedir,'g.all.group.rds'))
@@ -60,14 +60,14 @@ AUCResults$rowNumber = 1:nrow(AUCResults)
 Largest component sizes were computed as a fraction of all possible
 
 ```{r}
-dt.g.all.sub.graph$max.frac.comp = dt.g.all.sub.graph[,.(max.comp)] / 264
+dt.g.all.sub.graph$max.frac.comp = dt.g.all.sub.graph[,.(max.comp)] / 116
 ```
 
 ```{r}
 source("ComputeAUC.R")
 metrics = list("max.frac.comp", "E.local", "E.global", "Lp", "Cp")
 for(metric in metrics){
-    result = computeAUC(dt.g.all.sub.graph, covars.fmri, thresholds, metric, "Study.ID")
+    result = computeAUC(dt.g.all.sub.graph, covars.fmri, thresholds, metric, "SUBJID")
     AUCResults = merge(AUCResults, result)
 }
 ```
@@ -82,7 +82,7 @@ Computing the small worldness requires generation of random graphs.
 ```{r}
 source("ComputeSmall.R")
 small.dt = computeSmall(g.all.sub, thresholds, 20)
-saveRDS(small.dt, file=file.path(savedir, 'adhd.small.dt.rds'), compress='xz')
+saveRDS(small.dt, file=file.path(savedir, 'AAL.small.dt.rds'), compress='xz')
 ```
 
 ```{r}
@@ -108,7 +108,7 @@ metrics = list("max.frac.comp", "E.local", "E.global", "Lp", "Cp", "Lp.norm", "C
 globalPValues = data.table(p.value=numeric(), metric=character())[1:length(metrics)]
 for(index in 1:length(metrics)){
     metric = metrics[[index]]
-    spList = AUCResults[status=="SPADHD" | status=="SP"][[metric]]
+    spList = AUCResults[status=="SPADHD"|status=="SP"][[metric]]
     controlList = AUCResults[status=="Control"][[metric]]
     ttest = perm.t.test(spList, controlList, R = 10000) # two sample t-test (SP, Control)
     globalPValues[index] = list(ttest$perm.p.value, metric)
@@ -147,11 +147,38 @@ We try and compute parameters for each node. This code takes a little longer as 
 
 ### Nodal Global Efficiency
 
+Define indices of control and experimental group
+
+```{r}
+groups = c('Control', 'SP', 'SPADHD')
+inds = lapply(groups, function(x) covars.fmri[status == x, which=TRUE])
+controlIndexes = inds[[1]]
+spPureIndexes = inds[[2]]
+spADHDIndexes = inds[[3]]
+
+# Generating all possible control and experimental group pairings
+# Control - Experimental
+# healthy - spPure + spADHD
+# healthy - spPure
+# healthy - spADHD
+# spADHD - spPure
+groupings = c("healthy - spPure + spADHD", "healthy - spPure", "healthy - spADHD", "spADHD - spPure")
+allControls = list(controlIndexes, controlIndexes, controlIndexes, spADHDIndexes)
+allExperimental = list(c(spPureIndexes, spADHDIndexes), spPureIndexes, spADHDIndexes, spPureIndexes)
+```
+
 ```{r}
 source("ComputeRegionalAUC.R")
-eNodalResult = computeRegionalAUC(dt.g.all.sub.vertex, covars.fmri, thresholds, "E.nodal")
-localResult = computeRegionalAUC(dt.g.all.sub.vertex, covars.fmri, thresholds, "E.local")
-degreeResult = computeRegionalAUC(dt.g.all.sub.vertex, covars.fmri, thresholds, "degree")
+regionalResults = list()
+for(i in 1:length(groupings)){
+    controlGroup = allControls[[i]]
+    experimentalGroup = allExperimental[[i]]
+    eNodalResult = computeRegionalAUC(dt.g.all.sub.vertex, covars.fmri, thresholds, controlGroup, experimentalGroup, "E.nodal")
+    localResult = computeRegionalAUC(dt.g.all.sub.vertex, covars.fmri, thresholds, controlGroup, experimentalGroup, "E.local")
+    degreeResult = computeRegionalAUC(dt.g.all.sub.vertex, covars.fmri, thresholds, controlGroup, experimentalGroup, "degree")
+    regionalResults[[i]] = list("label"=groupings[i], "eNodal"=eNodalResult, "local"=localResult, "degree"=degreeResult)
+}
+
 ```
 
 We can also check nodal statistics individually. This code is primarily used for testing single regional hypotheses.
