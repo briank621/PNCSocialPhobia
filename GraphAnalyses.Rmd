@@ -21,7 +21,7 @@ library("permuco")
 
 ```{r}
 savedir = "/Users/brian/Documents/classes/quantitativepsych/PNCSocialPhobia/savedGraphs"
-g.all.sub = readRDS(file.path(savedir,'AAL.g.all.sub.rds'))
+g.all.sub = readRDS(file.path(savedir,'GAAL.g.all.sub.rds'))
 thresholds = seq(.1, .35, .05)
 # only looking at subject level graphs for now, instead of group level graphs
 # g.all.group = readRDS(file.path(savedir,'g.all.group.rds'))
@@ -82,7 +82,7 @@ Computing the small worldness requires generation of random graphs.
 ```{r}
 source("ComputeSmall.R")
 small.dt = computeSmall(g.all.sub, thresholds, 20)
-saveRDS(small.dt, file=file.path(savedir, 'AAL.small.dt.rds'), compress='xz')
+saveRDS(small.dt, file=file.path(savedir, 'GAAL.small.dt.rds'), compress='xz')
 ```
 
 ```{r}
@@ -178,6 +178,7 @@ for(i in 1:length(groupings)){
     degreeResult = computeRegionalAUC(dt.g.all.sub.vertex, covars.fmri, thresholds, controlGroup, experimentalGroup, "degree")
     regionalResults[[i]] = list("label"=groupings[i], "eNodal"=eNodalResult, "local"=localResult, "degree"=degreeResult)
 }
+
 
 ```
 
