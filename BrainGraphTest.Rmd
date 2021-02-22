@@ -8,6 +8,7 @@ output: html_notebook
 ```{r}
 library("brainGraph")
 library("data.table")
+library("bit64")
 ```
 ## Set global variables
 ```{r}

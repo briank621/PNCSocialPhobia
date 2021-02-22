@@ -157,7 +157,13 @@ plotBox(singleAUCResults, "E.nodal_Occipital_Mid.L2")
 
 ```{r}
 source("GenerateBrainnetViewer.R")
+prefixPath =  paste(getwd(), '/brainnetEdges/', sep='')
 groupings = c("HCvALLSP.edge", "HCvPSP.edge", "HCvADHD.edge", "ADHDvPSP.edge")
-generateBrainnetViewer(numberNodes, regions.dt, filePath)
+for(i in 1:length(groupings)){
+  groupName = groupings[i]
+  generateBrainnetViewer(116, fcResults$significantPValues, paste(prefixPath, 'Significant', groupName, sep=''))
+  generateBrainnetViewer(116, fcResults$uncorrected, paste(prefixPath, 'Uncorrected', groupName, sep=''))
+}
+
 ```
 

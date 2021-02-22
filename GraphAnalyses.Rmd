@@ -20,7 +20,7 @@ library("permuco")
 ## Load graphs and variables
 
 ```{r}
-savedir = "/Users/brian/Documents/classes/quantitativepsych/PNCSocialPhobia/savedGraphs"
+#savedir = "/Users/brian/Documents/classes/quantitativepsych/PNCSocialPhobia/savedGraphs"
 g.all.sub = readRDS(file.path(savedir,'AAL.g.all.sub.rds'))
 thresholds = seq(.1, .35, .05)
 # only looking at subject level graphs for now, instead of group level graphs
@@ -31,9 +31,9 @@ dt.g.all.sub.vertex = rbindlist(lapply(g.all.sub, vertex_attr_dt))
 
 Combining different datatables
 ```{r}
-dt.g.all.sub.graph = rbind(dt.g.all.sub.graph, rbindlist(lapply(readRDS(file.path(savedir,'ADHD.g.all.sub.rds')), graph_attr_dt)))
-small.dt = rbind(small.dt, readRDS(file.path(savedir,'adhd.small.dt.rds')))
-dt.g.all.sub.vertex = rbind(dt.g.all.sub.vertex, rbindlist(lapply(readRDS(file.path(savedir,'ADHD.g.all.sub.rds')), vertex_attr_dt)))
+#dt.g.all.sub.graph = rbind(dt.g.all.sub.graph, rbindlist(lapply(readRDS(file.path(savedir,'ADHD.g.all.sub.rds')), graph_attr_dt)))
+#small.dt = rbind(small.dt, readRDS(file.path(savedir,'adhd.small.dt.rds')))
+#dt.g.all.sub.vertex = rbind(dt.g.all.sub.vertex, rbindlist(lapply(readRDS(file.path(savedir,'ADHD.g.all.sub.rds')), vertex_attr_dt)))
 ```
 
 
@@ -87,7 +87,7 @@ saveRDS(small.dt, file=file.path(savedir, 'AAL.small.dt.rds'), compress='xz')
 
 ```{r}
 ## Loading precomputed results
-small.dt = readRDS(file.path(savedir,'small.dt.rds'))
+small.dt = readRDS(file.path(savedir,'AAL.small.dt.rds'))
 ```
 
 
@@ -105,13 +105,20 @@ for(metric in metrics){
 
 ```{r}
 metrics = list("max.frac.comp", "E.local", "E.global", "Lp", "Cp", "Lp.norm", "Cp.norm", "sigma")
-globalPValues = data.table(p.value=numeric(), metric=character())[1:length(metrics)]
-for(index in 1:length(metrics)){
-    metric = metrics[[index]]
-    spList = AUCResults[status=="SPADHD"|status=="SP"][[metric]]
-    controlList = AUCResults[status=="Control"][[metric]]
-    ttest = perm.t.test(spList, controlList, R = 10000) # two sample t-test (SP, Control)
-    globalPValues[index] = list(ttest$perm.p.value, metric)
+groupings = c("healthy - spPure + spADHD", "healthy - spPure", "healthy - spADHD", "spADHD - spPure")
+globalPValues = data.table(p.value=numeric(), metric=character(), group=character())[1:(length(metrics)*length(groupings))]
+
+for(i in 1:length(groupings)){
+     controlGroup = allControls[[i]]
+    experimentalGroup = allExperimental[[i]]
+    for(index in 1:length(metrics)){
+        metric = metrics[[index]]
+        
+        spList = AUCResults[experimentalGroup][[metric]]
+        controlList = AUCResults[controlGroup][[metric]]
+        ttest = perm.t.test(spList, controlList, R = 10000) # two sample t-test (SP, Control)
+        globalPValues[(i - 1) * length(metrics) + index] = list(ttest$perm.p.value, metric, groupings[i])
+    }
 }
 ```
 

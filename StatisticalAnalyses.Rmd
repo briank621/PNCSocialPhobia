@@ -114,6 +114,8 @@ extractConfidence = function(row, A.pos.norm.sub, controlGroup, experimentalGrou
             spCount = spCount + 1
         }
     }     
+    print(spList)
+    print(controlList)
     ttest = perm.t.test(spList, controlList, R = 10000)
     return ((ttest$perm.conf.int[1] + ttest$perm.conf.int[2]) / 2)
 }
@@ -132,12 +134,11 @@ Adding a confidence interval column for each of the edges identified by FC diffe
 for(i in 1:length(fcResults)){
     controlGroup = allControls[[i]]
     experimentalGroup = allExperimental[[i]]
-    
     numEdges = NROW(fcResults[[i]]$significantPValues)
     confInt = rep(NA, numEdges)
     if(numEdges != 0){
         for(j in 1:numEdges){
-            confInt[j] = extractConfidence(fcResults[[i]]$significantPValues[j], A.pos.norm.sub, controlGroup, experimentalGroup)
+            confInt[j] = extractConfidence(fcResults[[i]]$significantPValues[j], A.all.norm.sub, controlGroup, experimentalGroup)
         }
         fcResults[[i]]$significantPValues = cbind(fcResults[[i]]$significantPValues, confInt)
     }
@@ -146,7 +147,7 @@ for(i in 1:length(fcResults)){
     confInt = rep(NA, numEdges)
     if(numEdges != 0){
         for(j in 1:numEdges){
-            confInt[j] = extractConfidence(fcResults[[i]]$uncorrected[j], A.pos.norm.sub, controlGroup, experimentalGroup)
+            confInt[j] = extractConfidence(fcResults[[i]]$uncorrected[j], A.all.norm.sub, controlGroup, experimentalGroup)
         }
         fcResults[[i]]$uncorrected = cbind(fcResults[[i]]$uncorrected, confInt)
     }
@@ -182,6 +183,8 @@ for(i in 1:length(groupings)){
 
 ```{r}
 #saveRDS(seedResults, file=file.path(savedir, 'AAL.seedResults.rds'), compress='xz')
+A.all.norm.sub = readRDS(file.path(savedir,'AAL.all.norm.sub.rds'))
+A.pos.norm.sub = readRDS(file.path(savedir,'AAL.A.pos.norm.sub.rds'))
 seedResults = readRDS(file.path(savedir, 'AAL.seedResults.rds'))
 fcResults = readRDS(file.path(savedir, 'AAL.fcResults.rds'))
 ```

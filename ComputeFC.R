@@ -27,7 +27,7 @@ computeFC = function(A.pos.norm.sub, controlGroup, experimentalGroup, nodes, atl
                     spCount = spCount + 1
                 }
             }     
-            ttest = perm.t.test(spList, controlList, R = 10000)
+            ttest = perm.t.test(spList, controlList, R = 100000)
             pvalues[index] = list(ttest$perm.p.value, atlasObject$name[i], atlasObject$name[j], i, j)
             setTxtProgressBar(progress, index)
             index = index + 1

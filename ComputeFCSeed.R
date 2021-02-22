@@ -22,7 +22,7 @@ computeFCSeed = function(A.pos.norm.sub, roi, controlGroup, experimentalGroup, n
             }
 
         }     
-        ttest = perm.t.test(spList, controlList, R = 10000)
+        ttest = perm.t.test(spList, controlList, R = 100000)
         pvalues[index] = list(ttest$perm.p.value, atlasObject$name[index], atlasObject$name[roi], index, roi)
         setTxtProgressBar(progress, index)
     }
