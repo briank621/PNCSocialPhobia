@@ -17,7 +17,7 @@ library("MKinfer")
 
 ```{r}
 savedir = "/home/xin/BrainImaging2016/Brian/savedGraphs"
-A.all.norm.sub = readRDS(file.path(savedir,'A.all.norm.sub.rds'))
+A.all.norm.sub = readRDS(file.path(savedir,'GAAL.A.all.norm.sub.rds'))
 ```
 
 
@@ -70,7 +70,7 @@ saveRDS(fcResults, file=file.path(savedir, 'AAL.fcResults.rds'), compress='xz')
 #saveRDS(pvalues, file=file.path(savedir, 'AAL.ADHDControl.p.values.rds'), compress='xz')
 saveRDS(pvalues, file=file.path(savedir, 'AAL.SPADHD.p.values.rds'), compress='xz')
 
-fcResults = readRDS(file.path(savedir, 'AAL.fcResults.rds'))
+fcResults = readRDS(file.path(savedir, 'GAAL.fcResults.rds'))
 pvalues = readRDS(file.path(savedir,'ALLSP.p.values.rds'))
 pvalues = readRDS(file.path(savedir,'PureSP.p.values.rds'))
 pvalues = readRDS(file.path(savedir,'ADHDControl.p.values.rds'))
@@ -114,8 +114,6 @@ extractConfidence = function(row, A.pos.norm.sub, controlGroup, experimentalGrou
             spCount = spCount + 1
         }
     }     
-    print(spList)
-    print(controlList)
     ttest = perm.t.test(spList, controlList, R = 10000)
     return ((ttest$perm.conf.int[1] + ttest$perm.conf.int[2]) / 2)
 }
@@ -140,11 +138,13 @@ for(i in 1:length(fcResults)){
         for(j in 1:numEdges){
             confInt[j] = extractConfidence(fcResults[[i]]$significantPValues[j], A.all.norm.sub, controlGroup, experimentalGroup)
         }
+        
         fcResults[[i]]$significantPValues = cbind(fcResults[[i]]$significantPValues, confInt)
     }
     
     numEdges = NROW(fcResults[[i]]$uncorrected)
     confInt = rep(NA, numEdges)
+    print(i)
     if(numEdges != 0){
         for(j in 1:numEdges){
             confInt[j] = extractConfidence(fcResults[[i]]$uncorrected[j], A.all.norm.sub, controlGroup, experimentalGroup)
@@ -154,7 +154,24 @@ for(i in 1:length(fcResults)){
 }
 ```
 
-
+Adding a confidence interval column for each of the edges identified by seed result differences
+```{r}
+for(i in 1:length(seedResults)){
+    controlGroup = allControls[[i]]
+    experimentalGroup = allExperimental[[i]]
+    
+    for(j in 1:length(seedResults[[i]])){
+        numEdges = NROW(seedResults[[i]][[j]]$significantPValues)
+        confInt = rep(NA, numEdges)
+        if(numEdges != 0){
+            for(k in 1:numEdges){
+                confInt[j] = extractConfidence(seedResults[[i]][[j]]$significantPValues[k], A.all.norm.sub, controlGroup, experimentalGroup)
+            }
+            seedResults[[i]][[j]]$significantPValues = cbind(seedResults[[i]][[j]]$significantPValues, confInt)
+        }
+    }
+}
+```
 
 
 ## Two Sample T-Test for Seed Regions (NOT USED CURRENTLY)
@@ -188,7 +205,7 @@ A.all.norm.sub = readRDS(file.path(savedir,'AAL.all.norm.sub.rds'))
 A.pos.norm.sub = readRDS(file.path(savedir,'AAL.A.pos.norm.sub.rds'))
 #saveRDS(fcResults, file=file.path(savedir, 'GAAL.fcResults.rds'), compress='xz')
 #saveRDS(seedResults, file=file.path(savedir, 'GAAL.seedResults.rds'), compress='xz')
-seedResults = readRDS(file.path(savedir, 'AAL.seedResults.rds'))
+seedResults = readRDS(file.path(savedir, 'GAAL.seedResults.rds'))
 fcResults = readRDS(file.path(savedir, 'AAL.fcResults.rds'))
 ```
 

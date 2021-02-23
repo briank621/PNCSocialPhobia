@@ -161,9 +161,26 @@ prefixPath =  paste(getwd(), '/brainnetEdges/', sep='')
 groupings = c("HCvALLSP.edge", "HCvPSP.edge", "HCvADHD.edge", "ADHDvPSP.edge")
 for(i in 1:length(groupings)){
   groupName = groupings[i]
-  generateBrainnetViewer(116, fcResults$significantPValues, paste(prefixPath, 'Significant', groupName, sep=''))
-  generateBrainnetViewer(116, fcResults$uncorrected, paste(prefixPath, 'Uncorrected', groupName, sep=''))
+  generateBrainnetViewer(116, fcResults[[i]]$significantPValues, paste(prefixPath, 'Significant', groupName, sep=''))
+  generateBrainnetViewer(116, fcResults[[i]]$uncorrected, paste(prefixPath, 'Uncorrected', groupName, sep=''))
 }
+```
 
+Adjacency Matrices for Seed Results
+Seed regions are L/R Amygdala, L/R dACC, L/R pCC
+
+```{r}
+source("GenerateBrainnetViewer.R")
+prefixPath =  paste(getwd(), '/brainnetEdges/', sep='')
+regions = c("LAmygdala", "RAmygdala", "LdACC", "RdACC", "LpCC", "RpCC");
+groupings = c("HCvALLSP.edge", "HCvPSP.edge", "HCvADHD.edge", "ADHDvPSP.edge")
+for(i in 1:length(groupings)){
+  groupName = groupings[i]
+  for(j in 1:length(regions)){
+    regionName = regions[j]
+    generateBrainnetViewer(116, seedResults[[j]][[i]]$significantPValues, paste(prefixPath, 'Significant', regionName, groupName, sep=''))
+    generateBrainnetViewer(116, seedResults[[j]][[i]]$uncorrected, paste(prefixPath, 'Uncorrected', regionName, groupName, sep=''))
+  }
+}
 ```
 
