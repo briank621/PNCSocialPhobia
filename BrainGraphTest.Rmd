@@ -38,7 +38,7 @@ When the code is finished, matfiles contains a list of each file path.
 subjectPaths = rep(NA, length(covars.fmri$SUBJID))
 count = 1
 for (subjectID in covars.fmri$SUBJID){
-    subjectPaths[count] = paste(datadir, '/aal_global_datafiles/ROICorrelation_FisherZ_sub_', subjectID, '.txt', sep='')
+    subjectPaths[count] = paste(datadir, '/aal_global_motion_datafiles/ROICorrelation_FisherZ_sub_', subjectID, '.txt', sep='')
     count = count + 1
 }
 matfiles = list(A=subjectPaths)
@@ -66,18 +66,20 @@ for(i in 1:length(thresholds)){
     A.all.bin.sub[[i]][A.all.bin.sub[[i]] > 0] = 1
     A.all.bin.mean[[i]][A.all.bin.mean[[i]] > 0] = 1
 }
-saveRDS(A.all.norm.sub, file=file.path(savedir, 'GAAL.A.all.norm.sub.rds'), compress='xz')
+saveRDS(A.all.norm.sub, file=file.path(savedir, 'GAALMotion.A.all.norm.sub.rds'), compress='xz')
 ```
 
+For all raw values for statistical comparisons
 ```{r}
 groups = c('Control', 'SP', 'SPADHD')
 #groups = c('SPADHD')
 inds = lapply(groups, function(x) covars.fmri[status == x, which=TRUE])
 modality <- 'fmri'
-thresholds = seq(.1, .35, .05)
 my.all.mats <- create_mats(matfiles$A, modality=modality, threshold.by='raw', mat.thres=c(-1.1), inds = inds)
 A.pos.norm.sub <- my.all.mats$A.norm.sub
 ```
+
+
 
 
 ## Creating Graphs
@@ -88,6 +90,6 @@ source("CreateGraphs.R")
 g.all = createGraphs(A.all.bin.sub, A.all.bin.mean, thresholds, covars, 'aal116')
 g.all.sub = g.all[1:length(thresholds)]
 g.all.group = g.all[-(1:length(thresholds))]
-saveRDS(g.all.sub, file=file.path(savedir, 'GAAL.g.all.sub.rds'), compress='xz')
+saveRDS(g.all.sub, file=file.path(savedir, 'GAALMotion.g.all.sub.rds'), compress='xz')
 #saveRDS(g.all.group, file=file.path(savedir, 'AAL.g.all.group.rds'), compress='xz')
 ```

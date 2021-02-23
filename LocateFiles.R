@@ -28,4 +28,4 @@ for (subjectID in covars.fmri$SUBJID){
 }
 
 matfiles = list(A=selectedSubjectFiles[!is.na(selectedSubjectFiles)])
-file.copy(matfiles$A, 'aal_global_datafiles') # move over all the files to a separate folder
+file.copy(matfiles$A, 'aal_global_motion_datafiles') # move over all the files to a separate folder

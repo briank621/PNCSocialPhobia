@@ -20,7 +20,7 @@ library("permuco")
 ## Load graphs and variables
 
 ```{r}
-g.all.sub = readRDS(file.path(savedir,'GAAL.g.all.sub.rds'))
+g.all.sub = readRDS(file.path(savedir,'GAALMotion.g.all.sub.rds'))
 thresholds = seq(.1, .35, .05)
 # only looking at subject level graphs for now, instead of group level graphs
 # g.all.group = readRDS(file.path(savedir,'g.all.group.rds'))
@@ -103,6 +103,7 @@ for(metric in metrics){
 ### Computing PValues for Global Metrics
 
 ```{r}
+
 metrics = list("max.frac.comp", "E.local", "E.global", "Lp", "Cp", "Lp.norm", "Cp.norm", "sigma")
 groupings = c("healthy - spPure + spADHD", "healthy - spPure", "healthy - spADHD", "spADHD - spPure")
 globalPValues = data.table(p.value=numeric(), metric=character(), group=character())[1:(length(metrics)*length(groupings))]
