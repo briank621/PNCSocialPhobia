@@ -3,7 +3,7 @@ paths = c('/Gender/SPADHD_DPARSF')
 basedir = '/home/xin/BrainImaging2016'
 matfiles = list()
 for (path in paths) {
-    matfiles = c(matfiles, list(list.files(paste(basedir, path, '/Results/ROISignals_FunImgARCWF', sep=''), 'ROICorrelation_FisherZ_sub_[0-9]+.txt', full.names=T)), recursive=TRUE)
+    matfiles = c(matfiles, list(list.files(paste(basedir, path, '/Results/ROISignals_FunImgARCFW', sep=''), 'ROICorrelation_FisherZ_sub_[0-9]+.txt', full.names=T)), recursive=TRUE)
 }
 
 # Filter subjects
@@ -28,4 +28,4 @@ for (subjectID in covars.fmri$SUBJID){
 }
 
 matfiles = list(A=selectedSubjectFiles[!is.na(selectedSubjectFiles)])
-file.copy(matfiles$A, 'aal_global_motion_datafiles') # move over all the files to a separate folder
+file.copy(matfiles$A, 'aal_datafiles') # move over all the files to a separate folder

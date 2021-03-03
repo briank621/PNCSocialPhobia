@@ -64,7 +64,7 @@ for(i in 1:length(groupings)){
 Loading the Data from saved RDS
 
 ```{r}
-saveRDS(fcResults, file=file.path(savedir, 'AAL.fcResults.rds'), compress='xz')
+saveRDS(fcResults, file=file.path(savedir, 'AALMotion.fcResults.rds'), compress='xz')
 #saveRDS(pvalues, file=file.path(savedir, 'AAL.ALLSP.p.values.rds'), compress='xz')
 #saveRDS(pvalues, file=file.path(savedir, 'AAL.PureSP.p.values.rds'), compress='xz')
 #saveRDS(pvalues, file=file.path(savedir, 'AAL.ADHDControl.p.values.rds'), compress='xz')
