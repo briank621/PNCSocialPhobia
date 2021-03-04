@@ -38,7 +38,7 @@ When the code is finished, matfiles contains a list of each file path.
 subjectPaths = rep(NA, length(covars.fmri$SUBJID))
 count = 1
 for (subjectID in covars.fmri$SUBJID){
-    subjectPaths[count] = paste(datadir, '/aal_datafiles/ROICorrelation_FisherZ_sub_', subjectID, '.txt', sep='')
+    subjectPaths[count] = paste(datadir, '/aal_global_motion_datafiles/ROICorrelation_FisherZ_sub_', subjectID, '.txt', sep='')
     count = count + 1
 }
 matfiles = list(A=subjectPaths)
@@ -66,7 +66,7 @@ for(i in 1:length(thresholds)){
     A.all.bin.sub[[i]][A.all.bin.sub[[i]] > 0] = 1
     A.all.bin.mean[[i]][A.all.bin.mean[[i]] > 0] = 1
 }
-saveRDS(A.all.norm.sub, file=file.path(savedir, 'AAL.A.all.norm.sub.rds'), compress='xz')
+saveRDS(A.all.norm.sub, file=file.path(savedir, 'GAALMotion.A.all.norm.sub.rds'), compress='xz')
 ```
 
 For all raw values for statistical comparisons
