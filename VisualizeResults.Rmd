@@ -161,7 +161,7 @@ prefixPath =  paste(getwd(), '/brainnetEdges/', sep='')
 groupings = c("HCvALLSP.edge", "HCvPSP.edge", "HCvADHD.edge", "ADHDvPSP.edge")
 for(i in 1:length(groupings)){
   groupName = groupings[i]
-  generateBrainnetViewer(116, fcResults[[i]]$significantPValues, paste(prefixPath, 'Significant', groupName, sep=''))
+  #generateBrainnetViewer(116, fcResults[[i]]$significantPValues, paste(prefixPath, 'Significant', groupName, sep=''))
   generateBrainnetViewer(116, fcResults[[i]]$uncorrected, paste(prefixPath, 'Uncorrected', groupName, sep=''))
 }
 ```
