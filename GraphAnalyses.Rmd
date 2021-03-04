@@ -86,7 +86,7 @@ saveRDS(small.dt, file=file.path(savedir, 'AAL.small.dt.rds'), compress='xz')
 
 ```{r}
 ## Loading precomputed results
-small.dt = readRDS(file.path(savedir,'GAAL.small.dt.rds'))
+small.dt = readRDS(file.path(savedir,'GAALMotion.small.dt.rds'))
 ```
 
 
@@ -192,6 +192,11 @@ for(i in 1:length(groupings)){
 ```{r}
 saveRDS(regionalResults, file=file.path(savedir, 'AAL.regionalResults.rds'), compress='xz')
 ```
+
+```{r}
+regionalResults = readRDS(file.path(savedir,'GAAL.regionalResults.rds'))
+```
+
 
 
 We can also check nodal statistics individually. This code is primarily used for testing single regional hypotheses.
