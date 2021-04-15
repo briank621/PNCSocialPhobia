@@ -19,8 +19,37 @@ library("permuco")
 
 ## Load graphs and variables
 
+List of participants to exclude due to excessive head movement
+
 ```{r}
-g.all.sub = readRDS(file.path(savedir,'GAALMotion.g.all.sub.rds'))
+toRemove = read.table("HeadMotionExclude.txt", col.names="SUBJID")
+toInclude = read.table("IncludedSubjects.txt", col.names="SUBJID")
+FD.dt = read.table("HeadMotion.tsv", sep="\t",fill=TRUE,header=TRUE)
+```
+Define indices of control and experimental group
+
+```{r}
+groups = c('Control', 'SP', 'SPADHD')
+#Create a copy of covars.fmri with subjects with excessive head motion removed
+inds = lapply(groups, function(x) covars.fmri[status == x, which=TRUE])
+#inds = lapply(groups, function(x) covars.fmri[status == x & SUBJID %in% toInclude$SUBJID, which=TRUE])
+controlIndexes = inds[[1]]
+spPureIndexes = inds[[2]]
+spADHDIndexes = inds[[3]]
+
+# Generating all possible control and experimental group pairings
+# Control - Experimental
+# healthy - spPure + spADHD
+# healthy - spPure
+# healthy - spADHD
+# spADHD - spPure
+groupings = c("healthy - spPure + spADHD", "healthy - spPure", "healthy - spADHD", "spADHD - spPure")
+allControls = list(controlIndexes, controlIndexes, controlIndexes, spADHDIndexes)
+allExperimental = list(c(spPureIndexes, spADHDIndexes), spPureIndexes, spADHDIndexes, spPureIndexes)
+```
+
+```{r}
+g.all.sub = readRDS(file.path(savedir,'AAL.g.all.sub.rds'))
 thresholds = seq(.1, .35, .05)
 # only looking at subject level graphs for now, instead of group level graphs
 # g.all.group = readRDS(file.path(savedir,'g.all.group.rds'))
@@ -81,12 +110,12 @@ Computing the small worldness requires generation of random graphs.
 ```{r}
 source("ComputeSmall.R")
 small.dt = computeSmall(g.all.sub, thresholds, 20)
-saveRDS(small.dt, file=file.path(savedir, 'AAL.small.dt.rds'), compress='xz')
+saveRDS(small.dt, file=file.path(savedir, 'CCAAL.small.dt.rds'), compress='xz')
 ```
 
 ```{r}
 ## Loading precomputed results
-small.dt = readRDS(file.path(savedir,'GAAL.small.dt.rds'))
+small.dt = readRDS(file.path(savedir,'AAL.small.dt.rds'))
 ```
 
 
@@ -109,7 +138,7 @@ groupings = c("healthy - spPure + spADHD", "healthy - spPure", "healthy - spADHD
 globalPValues = data.table(p.value=numeric(), metric=character(), group=character())[1:(length(metrics)*length(groupings))]
 
 for(i in 1:length(groupings)){
-     controlGroup = allControls[[i]]
+    controlGroup = allControls[[i]]
     experimentalGroup = allExperimental[[i]]
     for(index in 1:length(metrics)){
         metric = metrics[[index]]
@@ -125,8 +154,15 @@ for(i in 1:length(groupings)){
 FDR Correction for all Global Metrics
 
 ```{r}
-adjustedGlobalPValues = p.adjust(globalPValues$p.value, "fdr")
-globalPValues[which(adjustedGlobalPValues < .05)]
+#adjustedGlobalPValues = p.adjust(globalPValues$p.value, "fdr")
+#globalPValues[which(adjustedGlobalPValues < .05)]
+
+for(i in 1:length(groupings)){
+    selectedPValues = globalPValues[group == groupings[i]]
+    adjustedGlobalPValues = p.adjust(selectedPValues$p.value, "fdr")
+    print(adjustedGlobalPValues)
+    print(selectedPValues[which(adjustedGlobalPValues < .05)])
+}
 ```
 
 ### ANCOVA
@@ -135,14 +171,21 @@ Try ANCOVA with age as a nuisance variable
 
 ```{r}
 ## Centering covariate to the mean
+#metrics = list("max.frac.comp", "E.local", "E.global", "Lp", "Cp")
 metrics = list("max.frac.comp", "E.local", "E.global", "Lp", "Cp", "Lp.norm", "Cp.norm", "sigma")
 AUCResults$age_centered = scale(AUCResults$age_at_cnb, scale = FALSE)
-ancovaPValues = data.table(p.value=numeric(), metric=character())[1:length(metrics)]
+AUCResults$meanFD = FD.dt$mean.FD_Power
+AUCResults$percentHighFD = FD.dt$Percent.of.FD_Power.0.5
+ancovaPValues = data.table(age=numeric(), status=numeric(), sex=numeric(), meanFD=numeric(), metric=character())[1:length(metrics)]
 for(index in 1:length(metrics)){
     metric = metrics[[index]]
-    formula = paste(metric, '~age_at_cnb+status+Sex',sep = '')
+    formula = paste(metric, '~age_at_cnb+status+Sex+meanFD',sep = '')
     result = aovperm(as.formula(formula), data=AUCResults, np = 10000)
-    ancovaPValues[index] = list(result$table[['permutation P(>F)']][2], metric)
+    rowToAdd = as.double(result$table[['permutation P(>F)']])
+    for(pindex in 1:(length(rowToAdd) - 1)) {
+        ancovaPValues[index,pindex] = rowToAdd[pindex]
+    }
+    ancovaPValues[index,NCOL(ancovaPValues)] = metric
 }
 
 
@@ -153,26 +196,6 @@ for(index in 1:length(metrics)){
 We try and compute parameters for each node. This code takes a little longer as it has to loop through each node and then for each subject. The data is not added to the `AUCResults` table but returns a separate list of pvalues that corresponds to the regions.
 
 ### Nodal Global Efficiency
-
-Define indices of control and experimental group
-
-```{r}
-groups = c('Control', 'SP', 'SPADHD')
-inds = lapply(groups, function(x) covars.fmri[status == x, which=TRUE])
-controlIndexes = inds[[1]]
-spPureIndexes = inds[[2]]
-spADHDIndexes = inds[[3]]
-
-# Generating all possible control and experimental group pairings
-# Control - Experimental
-# healthy - spPure + spADHD
-# healthy - spPure
-# healthy - spADHD
-# spADHD - spPure
-groupings = c("healthy - spPure + spADHD", "healthy - spPure", "healthy - spADHD", "spADHD - spPure")
-allControls = list(controlIndexes, controlIndexes, controlIndexes, spADHDIndexes)
-allExperimental = list(c(spPureIndexes, spADHDIndexes), spPureIndexes, spADHDIndexes, spPureIndexes)
-```
 
 ```{r}
 source("ComputeRegionalAUC.R")
@@ -190,7 +213,7 @@ for(i in 1:length(groupings)){
 ```
 
 ```{r}
-saveRDS(regionalResults, file=file.path(savedir, 'AAL.regionalResults.rds'), compress='xz')
+saveRDS(regionalResults, file=file.path(savedir, 'CCAAL.regionalResults.rds'), compress='xz')
 ```
 
 

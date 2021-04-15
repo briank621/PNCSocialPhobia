@@ -23,7 +23,7 @@ theme_update(plot.title=element_text(hjust=0.5, size=8), axis.text=element_text(
 Specify Prefix for filenames
 ```{r}
 plotPath = paste(getwd(), '/plots', sep='')
-prefix = "AAL_"
+prefix = "CCAAL_"
 ```
 
 
@@ -52,7 +52,7 @@ plot_grid(plots[[1]], plots[[2]], plots[[3]], plots[[4]], ncol=2)
 ## Bar plot with errors
 
 ```{r}
-longAUC = melt(AUCResults, id.vars=c("SUBJID", "status", "rowNumber", "smry_soc", "Sex", "age_at_cnb"))
+longAUC = melt(AUCResults, id.vars=c("SUBJID", "status", "rowNumber", "smry_soc", "Sex", "age_at_cnb", "age_centered", "meanFD", "percentHighFD"))
 groupedAUC = longAUC[,list(AUC=mean(value), stdev=sd(value)), by=list(status, variable)]
 ggplot(groupedAUC, aes(x=variable, y=AUC, fill=status)) + geom_bar( stat="identity", color="black", position=position_dodge()) + geom_errorbar(aes(ymin=AUC-stdev, ymax=AUC+stdev), width=.2, position=position_dodge(0.9))
 ggsave(file.path(plotPath, paste(prefix, 'BarPlots.png', sep="")))

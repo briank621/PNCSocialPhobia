@@ -64,7 +64,7 @@ for(i in 1:length(groupings)){
 Loading the Data from saved RDS
 
 ```{r}
-saveRDS(fcResults, file=file.path(savedir, 'AAL.fcResults.rds'), compress='xz')
+saveRDS(fcResults, file=file.path(savedir, 'CCAAL.fcResults.rds'), compress='xz')
 #saveRDS(pvalues, file=file.path(savedir, 'AAL.ALLSP.p.values.rds'), compress='xz')
 #saveRDS(pvalues, file=file.path(savedir, 'AAL.PureSP.p.values.rds'), compress='xz')
 #saveRDS(pvalues, file=file.path(savedir, 'AAL.ADHDControl.p.values.rds'), compress='xz')
@@ -200,10 +200,10 @@ for(i in 1:length(groupings)){
 
 ```{r}
 
-#saveRDS(seedResults, file=file.path(savedir, 'AAL.seedResults.rds'), compress='xz')
+#saveRDS(seedResults, file=file.path(savedir, 'GAALMotion.seedResults.rds'), compress='xz')
 A.all.norm.sub = readRDS(file.path(savedir,'AAL.all.norm.sub.rds'))
 A.pos.norm.sub = readRDS(file.path(savedir,'AAL.A.pos.norm.sub.rds'))
-#saveRDS(fcResults, file=file.path(savedir, 'GAAL.fcResults.rds'), compress='xz')
+#saveRDS(fcResults, file=file.path(savedir, 'GAALMotion.fcResults.rds'), compress='xz')
 #saveRDS(seedResults, file=file.path(savedir, 'GAAL.seedResults.rds'), compress='xz')
 seedResults = readRDS(file.path(savedir, 'GAAL.seedResults.rds'))
 fcResults = readRDS(file.path(savedir, 'AAL.fcResults.rds'))
