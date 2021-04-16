@@ -65,19 +65,7 @@ Loading the Data from saved RDS
 
 ```{r}
 saveRDS(fcResults, file=file.path(savedir, 'CCAAL.fcResults.rds'), compress='xz')
-#saveRDS(pvalues, file=file.path(savedir, 'AAL.ALLSP.p.values.rds'), compress='xz')
-#saveRDS(pvalues, file=file.path(savedir, 'AAL.PureSP.p.values.rds'), compress='xz')
-#saveRDS(pvalues, file=file.path(savedir, 'AAL.ADHDControl.p.values.rds'), compress='xz')
-saveRDS(pvalues, file=file.path(savedir, 'AAL.SPADHD.p.values.rds'), compress='xz')
-
-fcResults = readRDS(file.path(savedir, 'GAAL.fcResults.rds'))
-pvalues = readRDS(file.path(savedir,'ALLSP.p.values.rds'))
-pvalues = readRDS(file.path(savedir,'PureSP.p.values.rds'))
-pvalues = readRDS(file.path(savedir,'ADHDControl.p.values.rds'))
-pvalues = readRDS(file.path(savedir,'SPADHD.p.values.rds'))
-
-
-uncorrected = pvalues[p.value < .001]
+fcResults = readRDS(file.path(savedir, 'CCAAL.fcResults.rds'))
 ```
 
 

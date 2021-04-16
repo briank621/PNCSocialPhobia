@@ -49,7 +49,7 @@ allExperimental = list(c(spPureIndexes, spADHDIndexes), spPureIndexes, spADHDInd
 ```
 
 ```{r}
-g.all.sub = readRDS(file.path(savedir,'AAL.g.all.sub.rds'))
+g.all.sub = readRDS(file.path(savedir,'CCAAL.g.all.sub.rds'))
 thresholds = seq(.1, .35, .05)
 # only looking at subject level graphs for now, instead of group level graphs
 # g.all.group = readRDS(file.path(savedir,'g.all.group.rds'))
@@ -217,7 +217,7 @@ saveRDS(regionalResults, file=file.path(savedir, 'CCAAL.regionalResults.rds'), c
 ```
 
 ```{r}
-regionalResults = readRDS(file.path(savedir,'GAAL.regionalResults.rds'))
+regionalResults = readRDS(file.path(savedir,'CCAAL.regionalResults.rds'))
 ```
 
 
