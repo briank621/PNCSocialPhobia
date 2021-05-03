@@ -47,6 +47,7 @@ shuffledRows$rowNumber = 1:nrow(shuffledRows)
 metrics = list( "E.local", "Cp", "Lp", "Lp.norm")
 plots = lapply(metrics, plotDataColumn, data=shuffledRows)
 plot_grid(plots[[1]], plots[[2]], plots[[3]], plots[[4]], ncol=2)
+ggsave(file.path(plotPath, paste(prefix, 'ScatterPlots.png', sep="")))
 ```
 
 ## Bar plot with errors
@@ -157,7 +158,7 @@ plotBox(singleAUCResults, "E.nodal_Occipital_Mid.L2")
 
 ```{r}
 source("GenerateBrainnetViewer.R")
-prefixPath =  paste(getwd(), '/brainnetEdges/', sep='')
+prefixPath =  paste(getwd(), '/brainnetEdges/CCAAL', sep='')
 groupings = c("HCvALLSP.edge", "HCvPSP.edge", "HCvADHD.edge", "ADHDvPSP.edge")
 for(i in 1:length(groupings)){
   groupName = groupings[i]

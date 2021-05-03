@@ -1,0 +1,40 @@
+---
+title: "Supplementary Analysis"
+output: html_notebook
+---
+
+### Computing PValues with Outliers removed
+
+We will be using the 1.5 rule to remove outliers for Lp and Cp
+
+```{r}
+removeOutliers = function(data, na.rm = TRUE, ...){
+  q = quantile(data, probs=c(.25, .75), na.rm = na.rm, ...)
+  threshold = 1.5 * IQR(data, na.rm = na.rm)
+  copyData = data
+  copyData[data < (q[1] - threshold)] = NA
+  copyData[data > (q[2] + threshold)] = NA
+  copyData
+}
+```
+
+```{r}
+metrics = list("Lp", "Cp", "E.local", "Lp.norm")
+groupings = c("healthy - spPure + spADHD", "healthy - spPure", "healthy - spADHD", "spADHD - spPure")
+globalPValues = data.table(p.value=numeric(), metric=character(), group=character())[1:(length(metrics)*length(groupings))]
+
+for(i in 1:length(groupings)){
+    controlGroup = allControls[[i]]
+    experimentalGroup = allExperimental[[i]]
+    for(index in 1:length(metrics)){
+        metric = metrics[[index]]
+        
+        spList = removeOutliers(AUCResults[experimentalGroup][[metric]])
+        controlList = removeOutliers(AUCResults[controlGroup][[metric]])
+        #spList = (AUCResults[experimentalGroup][[metric]])
+        #controlList = (AUCResults[controlGroup][[metric]])
+        ttest = perm.t.test(spList, controlList, R = 10000) # two sample t-test (SP, Control)
+        globalPValues[(i - 1) * length(metrics) + index] = list(ttest$perm.p.value, metric, groupings[i])
+    }
+}
+```

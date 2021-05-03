@@ -17,7 +17,7 @@ library("MKinfer")
 
 ```{r}
 savedir = "/home/xin/BrainImaging2016/Brian/savedGraphs"
-A.all.norm.sub = readRDS(file.path(savedir,'GAAL.A.all.norm.sub.rds'))
+A.all.norm.sub = readRDS(file.path(savedir,'CCAAL.A.all.norm.sub.rds'))
 ```
 
 
@@ -124,7 +124,7 @@ for(i in 1:length(fcResults)){
     confInt = rep(NA, numEdges)
     if(numEdges != 0){
         for(j in 1:numEdges){
-            confInt[j] = extractConfidence(fcResults[[i]]$significantPValues[j], A.all.norm.sub, controlGroup, experimentalGroup)
+            confInt[j] = extractConfidence(fcResults[[i]]$significantPValues[j], A.pos.norm.sub, controlGroup, experimentalGroup)
         }
         
         fcResults[[i]]$significantPValues = cbind(fcResults[[i]]$significantPValues, confInt)
@@ -135,7 +135,7 @@ for(i in 1:length(fcResults)){
     print(i)
     if(numEdges != 0){
         for(j in 1:numEdges){
-            confInt[j] = extractConfidence(fcResults[[i]]$uncorrected[j], A.all.norm.sub, controlGroup, experimentalGroup)
+            confInt[j] = extractConfidence(fcResults[[i]]$uncorrected[j], A.pos.norm.sub, controlGroup, experimentalGroup)
         }
         fcResults[[i]]$uncorrected = cbind(fcResults[[i]]$uncorrected, confInt)
     }
