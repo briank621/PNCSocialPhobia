@@ -1,0 +1,47 @@
+---
+title: "CostSensitiveAnalysis"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library("RWeka")
+```
+
+# Running a Cost Sensitive Classifier
+
+```{r}
+source("SVM/computeAccuracy.R")
+# Only do SP and Control for Binary Classification (exclude SPADHD)
+sampleIndexes = AUCResults[status %in% c("SP", "Control"), which = TRUE]
+SPvHCResults = AUCResults[sampleIndexes, ]
+
+# Extracting the correct metrics
+subsetTable = SPvHCResults[, c("status","Lp", "Cp", "E.local")]
+subsetTable$status = as.factor(subsetTable$status)
+results = NULL
+
+# Split the sets into training and test
+nfolds = 4
+set.seed(21)
+subdata = createFolds(subsetTable$status, nfolds)
+testFold = subdata$Fold1
+data.rose = ROSE(status~., data=subsetTable[-testFold,], p=.5,seed=321)$data
+table(data.rose$status)
+bestModel = computeAccuracy(data.rose, 4, kernel)
+
+# Split the training into validation and training-training
+
+# Evaluate the performance and choose best cost
+
+# Create model with the best cost
+
+# Generate predictions using a majority decision
+
+svmpred <- predict(bestModel, newdata=subsetTable[testFold,])
+CM = confusionMatrix( svmpred, subsetTable[testFold,]$status, positive="SP")
+temp = c( CM$overall[1], CM$byClass[1], CM$byClass[2])
+results= rbind(results, temp) 
+results
+```
+

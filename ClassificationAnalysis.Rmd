@@ -1,0 +1,272 @@
+---
+title: "ClassificationAnalysis"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library("e1071")
+library("groupdata2")
+library("caret")
+library("caretEnsemble")
+```
+
+```{r}
+attachFC = function(AUCResults, sampleIndexes){
+  ## Get indexes to include for FC analyses
+  includeMatrix = matrix(0, nrow = 116, ncol = 116)
+  for(i in 1:4){
+    uncorrected = fcResults[[i]]$uncorrected
+    for(j in 1:nrow(uncorrected)){
+      r1 = uncorrected[j]$region1Index
+      r2 = uncorrected[j]$region2Index
+      includeMatrix[r1, r2] = 1
+    }
+  }
+  
+  AUCResultsCopy = AUCResults[,"status"]
+  AUCResultsCopyAll = AUCResults[,c("Lp", "Cp", "E.local", "status")]
+  count = 1
+  for(i in 1:116){
+    for(j in 1:116){
+      if(includeMatrix[i,j] == 1){
+        AUCResultsCopy[,paste("Pair", count, sep="")] = A.pos.norm.sub[[1]][i,j,sampleIndexes]
+        AUCResultsCopyAll[,paste("Pair", count, sep="")] = A.pos.norm.sub[[1]][i,j,sampleIndexes]
+        count = count + 1
+      }
+    }
+  }
+  
+  list(AUCResultsCopy, AUCResultsCopyAll)
+}
+```
+
+```{r}
+permutationTest = function(AUCResults, accuracy){
+  originalStatus = AUCResults$status
+  score = accuracy * nrow(AUCResults)
+  better = 0
+  numPermutations = 10000
+  for(i in 1:numPermutations){
+    permutation = sample(AUCResults$status)
+    permVal = sum(originalStatus == permutation)
+    if(permVal > score)
+      better = better + 1
+  }
+  print(paste("Permutation p-value", better/numPermutations))
+}
+```
+
+# Run SVM Model with Hyperparameter tuning via grid search
+
+## Rewritten version of split into training and test
+
+```{r}
+source("SVM/computeAccuracy.R")
+# Only do SP and Control for Binary Classification (exclude SPADHD)
+sampleIndexes = AUCResults[status %in% c("SP", "Control"), which = TRUE]
+SPvHCResults = AUCResults[sampleIndexes, ]
+kernel = "radial"
+# Extracting the correct metrics
+subsetTable = SPvHCResults[, c("status","Lp", "Cp", "E.local")]
+subsetTable$status = as.factor(subsetTable$status)
+results = NULL
+# Split the sets into training and test
+nfolds = 4
+set.seed(21)
+subdata = createFolds(subsetTable$status, nfolds)
+testFold = subdata$Fold1
+data.rose = ROSE(status~., data=subsetTable[-testFold,], p=.5,seed=321)$data
+#data.rose = subsetTable[-testFold]
+table(data.rose$status)
+bestModel = computeAccuracy(data.rose, 4, kernel)
+# Use the final/best model to compute predictions
+#summary(bestModel) 
+svmpred <- predict(bestModel, newdata=subsetTable[testFold,])
+#table(subsetTable[testFold,]$status, svmpred)
+CM = confusionMatrix( svmpred, subsetTable[testFold,]$status, positive="SP")
+temp = c( CM$overall[1], CM$byClass[1], CM$byClass[2])
+results= rbind(results, temp) 
+results
+```
+
+
+## Old Version
+
+```{r}
+source("SVM/computeAccuracy.R")
+# Only do SP and Control for Binary Classification (exclude SPADHD)
+sampleIndexes = AUCResults[status %in% c("SP", "Control"), which = TRUE]
+SPvHCResults = AUCResults[sampleIndexes, ]
+kernel = "radial"
+
+# Which metrics we want to build our model on
+colNames = list(c("Lp"), c("Cp"), c("E.local"), c("Lp", "Cp", "E.local"), c("meanFD"))
+
+for(colName in colNames){
+  subsetTable = SPvHCResults[,.SD, .SDcols=append(colName,"status")]
+  print(colName)
+  accuracies = computeAccuracy(subsetTable, 4, kernel)
+}
+```
+
+
+```{r}
+source("SVM/computeAccuracy.R")
+
+# Attach the FC values as columns to our topological metrics
+combined = attachFC(SPvHCResults, sampleIndexes)
+SPvHCFC = combined[[1]]
+SPvHCFCAll = combined[[2]]
+
+print('FC Values')
+accuracies = computeAccuracy(SPvHCFC, 4, kernel)
+
+print('FC Values + Lp + Cp + E.local')
+accuracies = computeAccuracy(SPvHCFCAll, 4, kernel)
+
+```
+
+# Run Ensemble Learning
+
+## New Version
+
+```{r}
+source("SVM/ensembleLearning.R")
+# Only do SP and Control for Binary Classification (exclude SPADHD)
+sampleIndexes = AUCResults[status %in% c("SP", "Control"), which = TRUE]
+SPvHCResults = AUCResults[sampleIndexes, ]
+kernel = "radial"
+# Extracting the correct metrics
+subsetTable = SPvHCResults[, c("status","Lp", "Cp", "E.local")]
+subsetTable$status = as.factor(subsetTable$status)
+results = NULL
+# Split the sets into training and test
+nfolds = 4
+set.seed(21)
+subdata = createFolds(subsetTable$status, nfolds)
+testFold = subdata$Fold1
+data.rose = ROSE(status~., data=subsetTable[-testFold,], p=.5, seed=321)$data
+#data.rose = subsetTable[-testFold]
+table(data.rose$status)
+bestModel = ensembleLearning(data.rose, 4)
+# Use the final/best model to compute predictions
+#summary(bestModel) 
+svmpred <- predict(bestModel, newdata=subsetTable[testFold,])
+#table(subsetTable[testFold,]$status, svmpred)
+CM = confusionMatrix( svmpred, subsetTable[testFold,]$status, positive="SP")
+temp = c( CM$overall[1], CM$byClass[1], CM$byClass[2])
+results= rbind(results, temp) 
+results
+```
+
+
+```{r}
+source("SVM/ensembleLearning.R")
+sampleIndexes = AUCResults[status %in% c("SP", "Control"), which = TRUE]
+SPvHCResults = AUCResults[sampleIndexes, ]
+
+colNames = list(c("Lp"), c("Cp"), c("E.local"), c("Lp", "Cp", "E.local"), c("meanFD"))
+
+for(colName in colNames){
+  subsetTable = SPvHCResults[,.SD, .SDcols=append(colName,"status")]
+  print(colName)
+  ensembleLearning(subsetTable, 4)
+}
+```
+
+```{r}
+source("SVM/ensembleLearning.R")
+combined = attachFC(SPvHCResults, sampleIndexes)
+SPvHCFC = combined[[1]]
+SPvHCFCAll = combined[[2]]
+
+print('FC Values')
+ensembleLearning(SPvHCFC, 4)
+
+print('FC Values + Lp + Cp + E.local')
+ensembleLearning(SPvHCFCAll, 4)
+
+```
+
+## Code Below here is not used currently
+
+## Multi Class SVM 
+
+
+```{r}
+computeAccuracyMulti = function(data){
+  accuracies = rep(0, nrow(data))
+  # LOOCV
+  for(i in 1:nrow(data)){
+    train = data[-i,]
+    test = data[i,]
+    train$status = as.factor(train$status)
+    test$status = as.factor(test$status)
+    #print(train)
+    svm.model = svm(status ~ ., data = train, kernel="radial")
+    svm.pred = predict(svm.model, test)
+    print(svm.pred)
+    result = test$status == svm.pred
+    numCorrect = sum(result)
+    accuracy = numCorrect / nrow(test)
+    accuracies[i] = accuracy
+  }
+
+  accuracies
+}
+```
+
+```{r}
+AUCResults$meanFD = FD.dt$mean.FD_Jenkinson
+LpTable = AUCResults[,.(Lp, status)]
+accuracies = computeAccuracy(LpTable)
+accuracy = sum(accuracies) / length(accuracies)
+paste("LP: ", accuracy)
+CpTable = AUCResults[,.(Cp, status)]
+accuracies = computeAccuracy(CpTable)
+accuracy = sum(accuracies) / length(accuracies)
+paste("CP: ", accuracy)
+ElocalTable = AUCResults[,.(E.local, status)]
+accuracies = computeAccuracy(ElocalTable)
+accuracy = sum(accuracies) / length(accuracies)
+paste("Elocal: ", accuracy)
+combinedTable = AUCResults[,.(Lp, Cp, status)]
+accuracies = computeAccuracy(combinedTable)
+accuracy = sum(accuracies) / length(accuracies)
+paste("Combined: ", accuracy)
+meanFDTable = AUCResults[,.(meanFD, status)]
+accuracies = computeAccuracy(meanFDTable)
+accuracy = sum(accuracies) / length(accuracies)
+paste("Mean FD: ", accuracy)
+
+accuracies = computeAccuracy(AUCResultsCopy)
+accuracy = sum(accuracies) / length(accuracies)
+paste("FC Values: ", accuracy)
+accuracies = computeAccuracy(AUCResultsCopyAll)
+accuracy = sum(accuracies) / length(accuracies)
+paste("FC Values Combined: ", accuracy)
+```
+Permutation test of class labels
+```{r}
+originalStatus = AUCResults$status
+# linear accuracies
+#accuracies = c(0.379746835443038, 0.341772151898734, 0.29746835443038, 0.329113924050633, 0.373417721518987, 0.506329113924051, 0.512658227848101)
+
+# radial accuracies 
+accuracies = c(0.424050632911392, 0.322784810126582, 0.341772151898734, 0.335443037974684, 0.40506329113924, 0.556962025316456, 0.575949367088608)
+
+for(accuracy in accuracies){
+  score = accuracy * nrow(AUCResults) # Lp score
+  better = 0
+  for(i in 1:10000){
+    permutation = sample(AUCResults$status)
+    permVal = sum(originalStatus == permutation)
+    if(permVal > score)
+      better = better + 1
+  }
+  print(better)
+}
+```
+
+

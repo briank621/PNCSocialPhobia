@@ -1,0 +1,190 @@
+---
+title: "ClassificationAnalysis"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library("e1071")
+library("ROSE")
+library("groupdata2")
+library("caret")
+library("caretEnsemble")
+```
+
+```{r}
+attachFC = function(AUCResults, sampleIndexes){
+  ## Get indexes to include for FC analyses
+  includeMatrix = matrix(0, nrow = 116, ncol = 116)
+  for(i in 1:4){
+    uncorrected = fcResults[[i]]$uncorrected
+    for(j in 1:nrow(uncorrected)){
+      r1 = uncorrected[j]$region1Index
+      r2 = uncorrected[j]$region2Index
+      includeMatrix[r1, r2] = 1
+    }
+  }
+  
+  AUCResultsCopy = AUCResults[,"status"]
+  AUCResultsCopyAll = AUCResults[,c("Lp", "Cp", "E.local", "status")]
+  count = 1
+  for(i in 1:116){
+    for(j in 1:116){
+      if(includeMatrix[i,j] == 1){
+        AUCResultsCopy[,paste("Pair", count, sep="")] = A.pos.norm.sub[[1]][i,j,sampleIndexes]
+        AUCResultsCopyAll[,paste("Pair", count, sep="")] = A.pos.norm.sub[[1]][i,j,sampleIndexes]
+        count = count + 1
+      }
+    }
+  }
+  
+  list(AUCResultsCopy, AUCResultsCopyAll)
+}
+```
+
+```{r}
+permutationTest = function(AUCResults, accuracy){
+  originalStatus = AUCResults$status
+  score = accuracy * nrow(AUCResults)
+  better = 0
+  numPermutations = 10000
+  for(i in 1:numPermutations){
+    permutation = sample(AUCResults$status)
+    permVal = sum(originalStatus == permutation)
+    if(permVal > score)
+      better = better + 1
+  }
+  print(paste("Permutation p-value", better/numPermutations))
+}
+```
+
+# Run SVM Model with Hyperparameter tuning via grid search
+
+```{r}
+#load("vars.RData")
+source("SVM/computeAccuracy.R")
+# Only do SP and Control for Binary Classification (exclude SPADHD)
+sampleIndexes = AUCResults[status %in% c("SP", "Control"), which = TRUE]
+SPvHCResults = AUCResults[sampleIndexes, ]
+kernel = "radial"
+
+# Which metrics we want to build our model on
+  subsetTable = SPvHCResults[, c("status","Lp", "Cp", "E.local")]
+  subsetTable$status = as.factor(subsetTable$status)
+  results = NULL
+for (p in 1:4){
+  nfolds=4
+  set.seed(21)
+  subdata <- createFolds(subsetTable$status, nfolds)
+  if (p==1){
+    temp1 <-subdata$Fold1
+  } else if(p==2) {
+    temp1 <-subdata$Fold2
+  } else if(p==3) {
+    temp1 <-subdata$Fold3
+  } else {
+    temp1 <-subdata$Fold4
+  }
+ 
+        
+  data.rose = ROSE(status~., data=subsetTable[-temp1,], p=.5, hmult.majo=.25, hmult.mino=.25, seed=321)$data
+  #data.rose$status= factor(data.rose$status, levels=c("0","1"))
+  table(data.rose$status)
+
+  tune.out <- tune(svm, status ~.,data=data.rose, kernel="radial", ranges=list(cost=c(0.1, 1, 10, 100, 1000), gamma=c(0.5, 1,2,3,4)))
+   #  tune.out <- tune(svm, status ~.,data=subsetTable[-temp1,], kernel="polynomial", ranges=list(cost=c(0.1, 1, 10, 100, 1000), degree=c(1,2,3,4,5), coef0=c(0.1, 0.5, 1,2 ,3, 4)))
+  summary(tune.out$best.model) 
+  svmpred <- predict(tune.out$best.model, newdata=subsetTable[temp1,])
+  table(subsetTable[temp1,]$status, svmpred)
+  CM = confusionMatrix( svmpred, subsetTable[temp1,]$status, positive="SP")
+  temp = c( CM$overall[1], CM$byClass[1], CM$byClass[2])
+  results= rbind(results, temp) 
+}
+  results
+  colMeans(results)
+  #accuracies = computeAccuracy(subsetTable, 4, kernel)
+
+```
+
+
+```{r}
+source("SVM/computeAccuracy.R")
+
+# Attach the FC values as columns to our topological metrics
+combined = attachFC(SPvHCResults, sampleIndexes)
+SPvHCFC = combined[[1]]
+SPvHCFCAll = combined[[2]]
+
+ 
+  SPvHCFC$status = as.factor(SPvHCFC$status)
+  results = NULL
+  for (p in 1:4){
+    nfolds=4
+    set.seed(21)
+    subdata <- createFolds(SPvHCFC$status, nfolds)
+    if (p==1){
+    temp1 <-subdata$Fold1
+  } else if(p==2) {
+    temp1 <-subdata$Fold2
+  } else if(p==3) {
+    temp1 <-subdata$Fold3
+  } else {
+    temp1 <-subdata$Fold4
+  }
+ 
+    
+data.rose = ROSE(status~., data=SPvHCFC[-temp1,], p=.55, hmult.majo=.25, hmult.mino=.25, seed=321)$data
+#data.rose$status= factor(data.rose$status, levels=c("0","1"))
+table(data.rose$status)
+
+  tune.out <- tune(svm, status ~.,data=data.rose, kernel="linear", ranges=list(cost=c(0.1, 1, 10, 100, 1000)))
+ #  tune.out <- tune(svm, status ~.,data=subsetTable[-temp1,], kernel="polynomial", ranges=list(cost=c(0.1, 1, 10, 100, 1000), degree=c(1,2,3,4,5), coef0=c(0.1, 0.5, 1,2 ,3, 4)))
+  summary(tune.out$best.model) 
+  svmpred <- predict(tune.out$best.model, newdata=SPvHCFC[temp1,])
+  table(SPvHCFC[temp1,]$status, svmpred)
+  CM = confusionMatrix( svmpred, SPvHCFC[temp1,]$status, positive="SP")
+  temp = c( CM$overall[1], CM$byClass[1], CM$byClass[2])
+  results= rbind(results, temp) 
+  }
+  results
+  colMeans(results)
+#print('FC Values')
+#accuracies = computeAccuracy(SPvHCFC, 4, kernel)
+
+SPvHCFCAll$status = as.factor(SPvHCFCAll$status)
+  results = NULL
+  for (p in 1:4){
+    nfolds=4
+    set.seed(21)
+    subdata <- createFolds(SPvHCFCAll$status, nfolds)
+    if (p==1){
+    temp1 <-subdata$Fold1
+  } else if(p==2) {
+    temp1 <-subdata$Fold2
+  } else if(p==3) {
+    temp1 <-subdata$Fold3
+  } else {
+    temp1 <-subdata$Fold4
+  }
+  
+data.rose = ROSE(status~., data=SPvHCFCAll[-temp1,], p=.55, hmult.majo=.25, hmult.mino=.25, seed=321)$data
+#data.rose$status= factor(data.rose$status, levels=c("0","1"))
+table(data.rose$status)
+
+  tune.out <- tune(svm, status ~.,data=data.rose, kernel="linear", ranges=list(cost=c(0.1, 1, 10, 100, 1000)))
+ #  tune.out <- tune(svm, status ~.,data=subsetTable[-temp1,], kernel="polynomial", ranges=list(cost=c(0.1, 1, 10, 100, 1000), degree=c(1,2,3,4,5), coef0=c(0.1, 0.5, 1,2 ,3, 4)))
+  summary(tune.out$best.model) 
+  svmpred <- predict(tune.out$best.model, newdata=SPvHCFCAll[temp1,])
+  table(SPvHCFCAll[temp1,]$status, svmpred)
+  CM = confusionMatrix( svmpred, SPvHCFCAll[temp1,]$status, positive="SP")
+  temp = c( CM$overall[1], CM$byClass[1], CM$byClass[2])
+  results= rbind(results, temp) 
+  }
+  results
+ colMeans(results)
+  
+#print('FC Values + Lp + Cp + E.local')
+#accuracies = computeAccuracy(SPvHCFCAll, 4, kernel)
+
+```
+
