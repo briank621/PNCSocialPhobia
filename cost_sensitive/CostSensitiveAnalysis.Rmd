@@ -7,11 +7,44 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 library("RWeka")
 ```
+# Helper functions
+
+```{r}
+
+trainModels = function(modelType, training_data, validation_data, cost){
+  result=NULL
+
+  csc1.res=NULL
+  
+  for (k in 1:length(cost)) {
+    i=cost[k]
+    csc1 = CostSensitiveClassifier(status ~ ., data = training_data, control = Weka_control(`cost-matrix` = matrix(c(0, i, 1, 0), ncol = 2), W = modelType, M = TRUE))                
+
+    y = validation_data$status
+    yhat1= predict(csc1,newdata=validation_data)  
+    CM1 = confusionMatrix(yhat1, y, positive="SP")
+    csc1.res=rbind(csc1.res, c( CM1$overall[1], CM1$byClass[1], CM1$byClass[2]))
+  } 
+  return(csc1.res)
+}
+
+bestCost = function(results, spec_thresh, cost){
+  best_cost_index=-1
+  max_sens = 0
+  for (i in 1:length(cost)){
+    if(results[i, 3] >= spec_thresh & results[i, 2] > max_sens){
+      max_sens = results[i, 2]
+      best_cost_index = i
+    }
+  }
+  return(best_cost_index)
+}
+```
+
 
 # Running a Cost Sensitive Classifier
 
 ```{r}
-source("SVM/computeAccuracy.R")
 # Only do SP and Control for Binary Classification (exclude SPADHD)
 sampleIndexes = AUCResults[status %in% c("SP", "Control"), which = TRUE]
 SPvHCResults = AUCResults[sampleIndexes, ]
@@ -26,22 +59,78 @@ nfolds = 4
 set.seed(21)
 subdata = createFolds(subsetTable$status, nfolds)
 testFold = subdata$Fold1
-data.rose = ROSE(status~., data=subsetTable[-testFold,], p=.5,seed=321)$data
-table(data.rose$status)
-bestModel = computeAccuracy(data.rose, 4, kernel)
+data.training = ROSE(status~., data=subsetTable[-testFold,], p=.5,seed=321)$data
 
 # Split the training into validation and training-training
+validationFolds = createFolds(data.training$status, nfolds)
+validationFold = validationFolds$Fold1
+data.training.train = ROSE(status~., data=data.training[-validationFold,], p=.5,seed=321)$data
+data.training.validation = data.training[validationFold,]
 
 # Evaluate the performance and choose best cost
 
-# Create model with the best cost
+type1 = "weka.classifiers.meta.RandomCommittee"
+type2 = "weka.classifiers.meta.Bagging"
+type3 = "weka.classifiers.meta.RandomSubSpace"
+type4 = "weka.classifiers.trees.RandomForest"
+type5 = "weka.classifiers.meta.LogitBoost"
+
+cost=seq(1,4,by=.25)
+
+csc1.res=trainModels(type1, data.training.train, data.training.validation, cost)
+csc2.res=trainModels(type2, data.training.train, data.training.validation, cost)
+csc3.res=trainModels(type3, data.training.train, data.training.validation, cost)
+csc4.res=trainModels(type4, data.training.train, data.training.validation, cost)
+csc5.res=trainModels(type5, data.training.train, data.training.validation, cost)
+
+# Find best cost for each model
+spec_thres = .4 # specificty threshold
+opt1= cost[bestCost(csc1.res, spec_thres, cost)]
+opt2= cost[bestCost(csc2.res, spec_thres, cost)]
+opt3= cost[bestCost(csc3.res, spec_thres, cost)]
+opt4= cost[bestCost(csc4.res, spec_thres, cost)]
+opt5= cost[bestCost(csc5.res, spec_thres, cost)]
+
+# Retrain models with the best cost
+mdl1 = CostSensitiveClassifier(status ~ ., data = data.training.train, control = Weka_control(`cost-matrix` = matrix(c(0, opt1, 1, 0), ncol = 2), W = type1, M = TRUE))     
+mdl2 = CostSensitiveClassifier(status ~ ., data = data.training.train, control = Weka_control(`cost-matrix` = matrix(c(0, opt2, 1, 0), ncol = 2), W = type2, M = TRUE))     
+mdl3 = CostSensitiveClassifier(status ~ ., data = data.training.train, control = Weka_control(`cost-matrix` = matrix(c(0, opt3, 1, 0), ncol = 2), W = type3, M = TRUE))     
+mdl4 = CostSensitiveClassifier(status ~ ., data = data.training.train, control = Weka_control(`cost-matrix` = matrix(c(0, opt4, 1, 0), ncol = 2), W = type4, M = TRUE))     
+mdl5 = CostSensitiveClassifier(status ~ ., data = data.training.train, control = Weka_control(`cost-matrix` = matrix(c(0, opt5, 1, 0), ncol = 2), W = type5, M = TRUE))     
 
 # Generate predictions using a majority decision
 
-svmpred <- predict(bestModel, newdata=subsetTable[testFold,])
-CM = confusionMatrix( svmpred, subsetTable[testFold,]$status, positive="SP")
+testData = subsetTable[testFold]
+pred1 = predict(mdl1, newdata=testData)
+pred2 = predict(mdl2, newdata=testData)
+pred3 = predict(mdl3, newdata=testData)
+pred4 = predict(mdl4, newdata=testData)
+pred5 = predict(mdl5, newdata=testData)
+
+svmpred = rep(NA, length(testFold))
+for(i in 1:length(testFold)){
+  SPcount = 0
+  if(pred1[i] == "SP")
+    SPcount = SPcount + 1
+  if(pred2[i] == "SP")
+    SPcount = SPcount + 1
+  if(pred3[i] == "SP")
+    SPcount = SPcount + 1
+  if(pred4[i] == "SP")
+    SPcount = SPcount + 1
+  if(pred5[i] == "SP")
+    SPcount = SPcount + 1  
+  if(SPcount > 3)
+    svmpred[i] = "SP"
+  else
+    svmpred[i] = "Control"
+}
+
+# svmpred <- predict(bestModel, newdata=subsetTable[testFold,])
+CM = confusionMatrix( as.factor(svmpred), subsetTable[testFold,]$status, positive="SP")
 temp = c( CM$overall[1], CM$byClass[1], CM$byClass[2])
-results= rbind(results, temp) 
-results
+temp
+# results= rbind(results, temp) 
+# results
 ```
 

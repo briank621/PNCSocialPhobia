@@ -5,40 +5,32 @@ binge.train.validation<-binge.lag1.validation
 binge.train.train$bingnow<-as.factor(binge.train.train$bingnow)
 binge.train.validation$bingnow<-as.factor(binge.train.validation$bingnow)
 
-csc1.res<-NULL
-csc2.res<-NULL
-csc3.res<-NULL
-csc4.res<-NULL
-csc5.res<-NULL
+csc1.res=NULL
+csc2.res=NULL
+csc3.res=NULL
+csc4.res=NULL
+csc5.res=NULL
 
-cost<-seq(1,4,by=0.25)
+cost=seq(1,4,by=0.25)
 for (k in 1:13) {
-  i<-cost[k]
-  csc1 <- CostSensitiveClassifier(bingnow ~ ., data = binge.train.train, control = Weka_control(`cost-matrix` = matrix(c(0, 
-                                                                                                                         i, 1, 0), ncol = 2), W = "weka.classifiers.meta.RandomCommittee", M = TRUE))                
-  csc2 <- CostSensitiveClassifier(bingnow ~ ., data = binge.train.train,  control = Weka_control(`cost-matrix` = matrix(c(0, 
-                                                                                                                          i, 1, 0), ncol = 2), W = "weka.classifiers.meta.Bagging", M = TRUE))
-  csc3 <- CostSensitiveClassifier(bingnow ~ ., data = binge.train.train,  control = Weka_control(`cost-matrix` = matrix(c(0, 
-                                                                                                                          i, 1, 0), ncol = 2), W = "weka.classifiers.meta.RandomSubSpace", M = TRUE)) 
+  i=cost[k]
+  csc1 = CostSensitiveClassifier(status ~ ., data = data.training.train, control = Weka_control(`cost-matrix` = matrix(c(0, i, 1, 0), ncol = 2), W = "weka.classifiers.meta.RandomCommittee", M = TRUE))                
+  csc2 = CostSensitiveClassifier(status ~ ., data = data.training.train,  control = Weka_control(`cost-matrix` = matrix(c(0, i, 1, 0), ncol = 2), W = "weka.classifiers.meta.Bagging", M = TRUE))
+  csc3 = CostSensitiveClassifier(status ~ ., data = data.training.train,  control = Weka_control(`cost-matrix` = matrix(c(0, i, 1, 0), ncol = 2), W = "weka.classifiers.meta.RandomSubSpace", M = TRUE)) 
+  csc4 = CostSensitiveClassifier(status ~ ., data = data.training.train,  control = Weka_control(`cost-matrix` = matrix(c(0, i, 1, 0), ncol = 2), W = "weka.classifiers.trees.RandomForest", M = TRUE))  
+  csc5 = CostSensitiveClassifier(status ~ ., data = data.training.train,  control = Weka_control(`cost-matrix` = matrix(c(0, i, 1, 0), ncol = 2), W = "weka.classifiers.meta.LogitBoost", M = TRUE)) 
   
-  csc4 <- CostSensitiveClassifier(bingnow ~ ., data = binge.train.train,  control = Weka_control(`cost-matrix` = matrix(c(0, 
-                                                                                                                          i, 1, 0), ncol = 2), W = "weka.classifiers.trees.RandomForest", M = TRUE))  
-  
-  csc5 <- CostSensitiveClassifier(bingnow ~ ., data = binge.train.train,  control = Weka_control(`cost-matrix` = matrix(c(0, 
-                                                                                                                          i, 1, 0), ncol = 2), W = "weka.classifiers.meta.LogitBoost", M = TRUE)) 
-  
-  
-  y = binge.train.validation$bingnow
-  yhat1= predict(csc1,newdata=binge.train.validation)  
-  csc1.res<-rbind(csc1.res, myres(yhat1, y) )
-  yhat2= predict(csc2,newdata=binge.train.validation)  
-  csc2.res<-rbind(csc2.res, myres(yhat2, y) )
-  yhat3= predict(csc3,newdata=binge.train.validation)  
-  csc3.res <- rbind( csc3.res, myres(yhat3, y) )
-  yhat4= predict(csc4,newdata=binge.train.validation)  
-  csc4.res <- rbind(csc4.res, myres(yhat4, y) )
-  yhat5= predict(csc5,newdata=binge.train.validation)  
-  csc5.res<- rbind( csc5.res, myres(yhat5, y) )
+  y = data.training.validation$status
+  yhat1= predict(csc1,newdata=data.training.validation)  
+  csc1.res=rbind(csc1.res, myres(yhat1, y) )
+  yhat2= predict(csc2,newdata=data.training.validation)  
+  csc2.res=rbind(csc2.res, myres(yhat2, y) )
+  yhat3= predict(csc3,newdata=data.training.validation)  
+  csc3.res = rbind( csc3.res, myres(yhat3, y) )
+  yhat4= predict(csc4,newdata=data.training.validation)  
+  csc4.res = rbind(csc4.res, myres(yhat4, y) )
+  yhat5= predict(csc5,newdata=data.training.validation)  
+  csc5.res= rbind( csc5.res, myres(yhat5, y) )
 } 
 
 
