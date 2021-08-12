@@ -6,21 +6,13 @@ computeAccuracy = function(data, numFolds, kernel){
   trc = trainControl(method="cv", search="grid", savePredictions = "final", index = folds, classProbs=TRUE, summaryFunction = twoClassSummary)
   
   model = train(
-    status ~., data = data, method = "svmRadial",
+    status ~., data = data, method = "svmPoly",
     trControl = trc,
     preProcess = c("center","scale"),
-    tuneGrid = expand.grid(C=2^(-2:8), sigma=1:10/100),
+    tuneGrid = expand.grid(C=2^(-2:8), degree=1:10, scale=2^(-2:5)),
+    #tuneGrid = expand.grid(C=2^(-2:8), sigma=1:10/100),
     metric="ROC"
   )
-  # browser()
-  # numCorrect = sum(model$pred$pred == model$pred$obs)
-  # accuracies = numCorrect / nrow(data)
-  # confMatrix = table(model$pred$pred, model$pred$obs)
-  # sens = sensitivity(confMatrix, negative='Control', positive='SP')
-  # spec = specificity(confMatrix, negative='Control', positive='SP')
-  # print("")
-  # print(paste("Accuracy: ", round(accuracies, 4)))
-  # print(paste("Sensitivity: ", round(sens, 4)))
-  # print(paste("Specificity: ", round(spec, 4)))
+
   return(model)
 }
