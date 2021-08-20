@@ -80,3 +80,13 @@ cnn_history = cnn_model %>% fit(
 )
 ```
 
+## Evaluate Accuracy
+
+```{r}
+cnn_model %>% evaluate(x_test, y_test)
+```
+```{r}
+str(cnn_history)
+plot(cnn_history)
+```
+

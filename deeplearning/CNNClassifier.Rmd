@@ -8,131 +8,70 @@ knitr::opts_chunk$set(echo = TRUE)
 library(keras)
 ```
 
-# Helper functions
-
 ```{r}
+datadir = getwd()
+alldata = read.table(file=paste(datadir, "/SPvHCFCAll_data.csv", sep=''), sep=',',header = T)
+status = as.factor(alldata$status)
+features = alldata[, names(alldata) != "status"]
 
-trainModels = function(modelType, training_data, validation_data, cost){
-  result=NULL
+num_cols = ncol(features)
+train <- array_reshape(features, c(nrow(features), num_cols, 1))
+# x_test <- array_reshape(x_test, c(nrow(x_test), img_rows, img_cols, 1))
+input_shape <- c(num_cols, 1)
+num_classes = 2
 
-  csc1.res=NULL
-  
-  for (k in 1:length(cost)) {
-    i=cost[k]
-    csc1 = CostSensitiveClassifier(status ~ ., data = training_data, control = Weka_control(`cost-matrix` = matrix(c(0, i, 1, 0), ncol = 2), W = modelType, M = TRUE))                
-
-    y = validation_data$status
-    yhat1= predict(csc1,newdata=validation_data)  
-    CM1 = confusionMatrix(yhat1, y, positive="SP")
-    csc1.res=rbind(csc1.res, c( CM1$overall[1], CM1$byClass[1], CM1$byClass[2]))
-  } 
-  return(csc1.res)
-}
-
-bestCost = function(results, spec_thresh, cost){
-  best_cost_index=-1
-  max_sens = 0
-  for (i in 1:length(cost)){
-    if(results[i, 3] >= spec_thresh & results[i, 2] > max_sens){
-      max_sens = results[i, 2]
-      best_cost_index = i
-    }
-  }
-  return(best_cost_index)
-}
+# convert the dataframe into an array and see what happens
 ```
 
 
-# Running a Cost Sensitive Classifier
+```{r}
+cnn_model = keras_model_sequential() %>%
+  layer_conv_1d(filters = 32, kernel_size = c(5), activation="relu", input_shape=input_shape) %>% 
+  layer_max_pooling_2d(pool_size = c(2,2)) %>% 
+  layer_conv_1d(filters=64, kernel_size = c(5), activation = "relu") %>% 
+  layer_max_pooling_2d(pool_size = c(2,2)) %>% 
+  layer_dropout(rate = 0.2) %>% 
+  layer_flatten() %>% 
+  layer_dense(units = 10, activation = "relu") %>% 
+  layer_dropout(rate = 0.5) %>% 
+  layer_dense(units = 5, activation = "relu") %>% 
+  layer_dense(units = num_classes, activation = "softmax")
+
+summary(cnn_model)
+```
+
 
 ```{r}
-# Only do SP and Control for Binary Classification (exclude SPADHD)
-sampleIndexes = AUCResults[status %in% c("SP", "Control"), which = TRUE]
-SPvHCResults = AUCResults[sampleIndexes, ]
-
-# Extracting the correct metrics
-subsetTable = SPvHCResults[, c("status","Lp", "Cp", "E.local")]
-subsetTable$status = as.factor(subsetTable$status)
-results = NULL
-
-# Split the sets into training and test
-nfolds = 4
+nfolds=4
 set.seed(21)
-subdata = createFolds(subsetTable$status, nfolds)
-testFold = subdata$Fold1
-data.training = ROSE(status~., data=subsetTable[-testFold,], p=.5,seed=321)$data
+subdata <- createFolds(alldata$status, nfolds)
 
-# Split the training into validation and training-training
-validationFolds = createFolds(data.training$status, nfolds)
-validationFold = validationFolds$Fold1
-data.training.train = ROSE(status~., data=data.training[-validationFold,], p=.5,seed=321)$data
-data.training.validation = data.training[validationFold,]
+results = NULL
+for (p in 1:4){
+  if (p==1){
+    temp1 <-subdata$Fold1
+  } else if(p==2) {
+    temp1 <-subdata$Fold2
+  } else if(p==3) {
+    temp1 <-subdata$Fold3
+  } else {
+    temp1 <-subdata$Fold4
+  }
+  
+  data.rose = ROSE(status~., data=alldata[-temp1,], p=.55, hmult.majo=.25, hmult.mino=.25, seed=321)$data
+  table(data.rose$status)
+  
+  tune.out <- tune(svm, status ~.,data=data.rose, kernel="linear", ranges=list(cost=c(0.001,0.03, 0.05, 0.1, 1)))
 
-# Evaluate the performance and choose best cost
-
-type1 = "weka.classifiers.meta.RandomCommittee"
-type2 = "weka.classifiers.meta.Bagging"
-type3 = "weka.classifiers.meta.RandomSubSpace"
-type4 = "weka.classifiers.trees.RandomForest"
-type5 = "weka.classifiers.meta.LogitBoost"
-
-cost=seq(1,4,by=.25)
-
-csc1.res=trainModels(type1, data.training.train, data.training.validation, cost)
-csc2.res=trainModels(type2, data.training.train, data.training.validation, cost)
-csc3.res=trainModels(type3, data.training.train, data.training.validation, cost)
-csc4.res=trainModels(type4, data.training.train, data.training.validation, cost)
-csc5.res=trainModels(type5, data.training.train, data.training.validation, cost)
-
-# Find best cost for each model
-spec_thres = .4 # specificty threshold
-opt1= cost[bestCost(csc1.res, spec_thres, cost)]
-opt2= cost[bestCost(csc2.res, spec_thres, cost)]
-opt3= cost[bestCost(csc3.res, spec_thres, cost)]
-opt4= cost[bestCost(csc4.res, spec_thres, cost)]
-opt5= cost[bestCost(csc5.res, spec_thres, cost)]
-
-# Retrain models with the best cost
-mdl1 = CostSensitiveClassifier(status ~ ., data = data.training.train, control = Weka_control(`cost-matrix` = matrix(c(0, opt1, 1, 0), ncol = 2), W = type1, M = TRUE))     
-mdl2 = CostSensitiveClassifier(status ~ ., data = data.training.train, control = Weka_control(`cost-matrix` = matrix(c(0, opt2, 1, 0), ncol = 2), W = type2, M = TRUE))     
-mdl3 = CostSensitiveClassifier(status ~ ., data = data.training.train, control = Weka_control(`cost-matrix` = matrix(c(0, opt3, 1, 0), ncol = 2), W = type3, M = TRUE))     
-mdl4 = CostSensitiveClassifier(status ~ ., data = data.training.train, control = Weka_control(`cost-matrix` = matrix(c(0, opt4, 1, 0), ncol = 2), W = type4, M = TRUE))     
-mdl5 = CostSensitiveClassifier(status ~ ., data = data.training.train, control = Weka_control(`cost-matrix` = matrix(c(0, opt5, 1, 0), ncol = 2), W = type5, M = TRUE))     
-
-# Generate predictions using a majority decision
-
-testData = subsetTable[testFold]
-pred1 = predict(mdl1, newdata=testData)
-pred2 = predict(mdl2, newdata=testData)
-pred3 = predict(mdl3, newdata=testData)
-pred4 = predict(mdl4, newdata=testData)
-pred5 = predict(mdl5, newdata=testData)
-
-svmpred = rep(NA, length(testFold))
-for(i in 1:length(testFold)){
-  SPcount = 0
-  if(pred1[i] == "SP")
-    SPcount = SPcount + 1
-  if(pred2[i] == "SP")
-    SPcount = SPcount + 1
-  if(pred3[i] == "SP")
-    SPcount = SPcount + 1
-  if(pred4[i] == "SP")
-    SPcount = SPcount + 1
-  if(pred5[i] == "SP")
-    SPcount = SPcount + 1  
-  if(SPcount > 3)
-    svmpred[i] = "SP"
-  else
-    svmpred[i] = "Control"
+  summary(tune.out$best.model) 
+  svmpred <- predict(tune.out$best.model, newdata=alldata[temp1,])
+  table(alldata[temp1,]$status, svmpred)
+  CM = confusionMatrix( svmpred, alldata[temp1,]$status, positive="SP")
+  temp = c( CM$overall[1], CM$byClass[1], CM$byClass[2])
+  results= rbind(results, temp) 
 }
 
-# svmpred <- predict(bestModel, newdata=subsetTable[testFold,])
-CM = confusionMatrix( as.factor(svmpred), subsetTable[testFold,]$status, positive="SP")
-temp = c( CM$overall[1], CM$byClass[1], CM$byClass[2])
-temp
-# results= rbind(results, temp) 
-# results
+results
+colMeans(results)
 ```
-
 
