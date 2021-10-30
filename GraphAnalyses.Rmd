@@ -239,14 +239,15 @@ source("ComputeSingleRegionAUC.R")
 singleAUCResults =covars.fmri[, .(SUBJID, status, smry_soc)]
 singleAUCResults$rowNumber = 1:nrow(AUCResults)
 regionName = "SOG.R"
-regions = c(regionName)
-for(region in regions){
-    result = computeSingleRegionAUC(dt.g.all.sub.vertex, region, covars.fmri, thresholds, "E.nodal");
+regions = c("SOG.L", "SOG.R", "PCL.R")
+metrics = c("E.nodal", "E.nodal", "E.local")
+for(i in 1:length(regions)){
+    result = computeSingleRegionAUC(dt.g.all.sub.vertex, regions[i], covars.fmri, thresholds, metrics[i]);
     singleAUCResults = merge(singleAUCResults, result, by=c("SUBJID"))
 }
-metricName = paste("E.nodal_", regionName, sep="")
-spList = singleAUCResults[status=="SPADHD"][[metricName]]
-controlList = singleAUCResults[status=="SP"][[metricName]]
+# metricName = paste("E.nodal_", regionName, sep="")
+# spList = singleAUCResults[status=="SPADHD"][[metricName]]
+# controlList = singleAUCResults[status=="SP"][[metricName]]
 # ttest = perm.t.test(spList, controlList, R = 10000) # two sample t-test (SP, Control)
 ```
 
@@ -311,14 +312,19 @@ dt = data.table(status=covars.fmri$status, Lp=AUCResults$Lp, Cp=AUCResults$Cp, E
 dt[,Lp.norm:= AUCResults$Lp.norm]
 
 count = 1
+seen = array(0, dim=c(116,116))
 
 for(i in 1:4){
     uncorrected = fcResults[[i]]$uncorrected
-    for(j in 1:length(uncorrected)){
+    for(j in 1:NROW(uncorrected)){
+        r1i = uncorrected[j]$region1Index
+        r2i = uncorrected[j]$region2Index
+        if(seen[r1i, r2i] == 1){ # ignore duplicate edges
+            next
+        }
+        seen[r1i, r2i] = 1
         pairName = paste('Pair', count, sep='')
         count = count + 1
-        r1i = uncorrected$region1Index
-        r2i = uncorrected$region2Index
         fcValue = A.pos.norm.sub[[1]][r1i, r2i, ]
         dt[,(pairName):= fcValue]
     }
@@ -326,7 +332,10 @@ for(i in 1:4){
 
 # go through all topological measures
 
+# Implicated vertices are eNodal: 49, 50 and local: 70
+# This is using the singleAUCResults code from abova
 
+dt = merge(dt, singleAUCResults[, c("SUBJID", "E.nodal_SOG.L", "E.nodal_SOG.R", "E.local_PCL.R")], by=c("SUBJID"))
 
 ```
 
