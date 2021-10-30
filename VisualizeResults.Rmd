@@ -98,13 +98,58 @@ regions.dt = data.table(status=character(), anatomy=character(), network=charact
 
 
 ```{r}
-region.dt = data.table(status=character(), anatomy=character(), network=character())
-for (i in 1:nrow(uncorrected)){
-    region.dt = rbind(region.dt, list("All SP v Control", power264[uncorrected[i]$region1Index]$Anatomy, power264[uncorrected[i]$region1Index]$network))
-    region.dt = rbind(region.dt, list("All SP v Control", power264[uncorrected[i]$region2Index]$Anatomy, power264[uncorrected[i]$region2Index]$network))
-}
-regions.dt = rbind(regions.dt, region.dt)
+uncorrected = fcResults[[1]]$uncorrected
+groups = c('Control', 'SP', 'SPADHD')
+groupings = c("healthy - spPure + spADHD", "healthy - spPure", "healthy - spADHD", "spADHD - spPure")
+#Create a copy of covars.fmri with subjects with excessive head motion removed
+inds = lapply(groups, function(x) covars.fmri[status == x, which=TRUE])
+#inds = lapply(groups, function(x) covars.fmri[status == x & SUBJID %in% toInclude$SUBJID, which=TRUE])
+controlIndexes = inds[[1]]
+spPureIndexes = inds[[2]]
+spADHDIndexes = inds[[3]]
+allControls = list(controlIndexes, controlIndexes, controlIndexes, spADHDIndexes)
+allExperimental = list(c(spPureIndexes, spADHDIndexes), spPureIndexes, spADHDIndexes, spPureIndexes)
 ```
+
+
+```{r}
+region.dt = data.table(status=character(), lobe=character())
+pairs = data.table(pair=character(), group=character())
+magnitudeChange = data.table(r1=character(), r2=character(), group=character(), diff=character(), pvalue=numeric())
+for(j in 1:length(groupings)){
+  groupName = groupings[j]
+  uncorrected = fcResults[[j]]$uncorrected
+  for (i in 1:nrow(uncorrected)){
+    r1 = aal116[uncorrected[i]$region1Index]$lobe
+    r2 = aal116[uncorrected[i]$region2Index]$lobe
+    i1 = as.numeric(r1)
+    i2 = as.numeric(r2)
+  
+    index1 = uncorrected[i]$region1Index
+    index2 = uncorrected[i]$region2Index
+    
+    if(i1 > i2){
+      pairs = rbind(pairs, list(paste(r2, r1), groupName))
+    }
+    else{
+      pairs = rbind(pairs, list(paste(r1, r2), groupName))
+    }
+    
+    controlFC = mean(A.pos.norm.sub[[1]][index1, index2, allControls[[j]]])
+    experimentalFC = mean(A.pos.norm.sub[[1]][index1, index2, allExperimental[[j]]])
+    magnitudeChange = rbind(magnitudeChange, list(uncorrected[i]$region1Name, uncorrected[i]$region2Name, groupName, controlFC - experimentalFC, uncorrected[i]$p.value))
+  }
+}
+# regions.dt = rbind(regions.dt, region.dt)
+dplyr::count(data.frame(pairs[group==groupings[[1]]]), pair)
+```
+
+```{r}
+# Compute regional value differences
+index = 70
+
+```
+
 
 ```{r}
 saveRDS(regions.dt, file=file.path(savedir, 'regions.dt.rds'), compress='xz')

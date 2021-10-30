@@ -156,12 +156,22 @@ FDR Correction for all Global Metrics
 ```{r}
 #adjustedGlobalPValues = p.adjust(globalPValues$p.value, "fdr")
 #globalPValues[which(adjustedGlobalPValues < .05)]
-
+significantGlobal = data.table(metric=character(), group=character(), diff=character(), pvalue=numeric())
 for(i in 1:length(groupings)){
     selectedPValues = globalPValues[group == groupings[i]]
     adjustedGlobalPValues = p.adjust(selectedPValues$p.value, "fdr")
-    print(adjustedGlobalPValues)
-    print(selectedPValues[which(adjustedGlobalPValues < .05)])
+    significantValues = which(adjustedGlobalPValues < .05)
+    if(length(significantValues) == 0){
+        next
+    }
+    for(j in 1:length(significantValues)){
+        index = significantValues[j]
+        metricName = selectedPValues[index]$metric
+        controlGroup = allControls[[i]]
+        experimentalGroup = allExperimental[[i]]
+        diff = mean(AUCResults[[metricName]][controlGroup]) - mean(AUCResults[[metricName]][experimentalGroup])
+        significantGlobal = rbind(significantGlobal, list(metricName, groupings[i], diff, adjustedGlobalPValues[index]))
+    }
 }
 ```
 
@@ -228,15 +238,16 @@ We can also check nodal statistics individually. This code is primarily used for
 source("ComputeSingleRegionAUC.R")
 singleAUCResults =covars.fmri[, .(SUBJID, status, smry_soc)]
 singleAUCResults$rowNumber = 1:nrow(AUCResults)
-# Left Posterior Cingulate Gyrus was said to have decreased nodal local efficiency
-regions = c("Occipital_Mid.L2")
+regionName = "SOG.R"
+regions = c(regionName)
 for(region in regions){
     result = computeSingleRegionAUC(dt.g.all.sub.vertex, region, covars.fmri, thresholds, "E.nodal");
     singleAUCResults = merge(singleAUCResults, result, by=c("SUBJID"))
 }
-spList = singleAUCResults[status=="SP"][["E.nodal_Occipital_Mid.L2"]]
-controlList = singleAUCResults[status=="SPADHD"][["E.nodal_Occipital_Mid.L2"]]
-ttest = perm.t.test(spList, controlList, R = 10000) # two sample t-test (SP, Control)
+metricName = paste("E.nodal_", regionName, sep="")
+spList = singleAUCResults[status=="SPADHD"][[metricName]]
+controlList = singleAUCResults[status=="SP"][[metricName]]
+# ttest = perm.t.test(spList, controlList, R = 10000) # two sample t-test (SP, Control)
 ```
 
 ## Verify that the threshold is appropriate

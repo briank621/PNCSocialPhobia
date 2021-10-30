@@ -1,0 +1,38 @@
+1: ORBsupmed.L     PHG.R healthy - spPure + spADHD  0.100731965558379
+ 2:       CAL.L     CAL.R healthy - spPure + spADHD  0.165745276738908
+ 3:       SPG.L  VERMIS10 healthy - spPure + spADHD 0.0849629006317924
+ 4:       SMG.R     CB3.L healthy - spPure + spADHD 0.0983663720442288
+ 5:      PCUN.L  VERMIS10 healthy - spPure + spADHD 0.0905340817187139
+ 6:      CB10.R VERMIS1_2 healthy - spPure + spADHD   0.10232784476629
+ 7:       SMA.R     DCG.R          healthy - spPure  0.186460893495749
+ 8:       OLF.R    CB7b.R          healthy - spPure  0.138256481826096
+ 9:       OLF.R     CB8.R          healthy - spPure  0.125139234200576
+10:       HIP.R     STG.L          healthy - spPure  0.134874796363177
+11:       SOG.L VERMIS4_5          healthy - spPure  0.167877661840367
+12:       SOG.R VERMIS4_5          healthy - spPure  0.166971260333169
+13:       IPL.R     CB8.R          healthy - spPure  0.154800810401535
+14:       SMG.L   CRUS1.R          healthy - spPure  0.159899538618641
+15:       SMG.L     CB9.L          healthy - spPure  0.155969300200168
+16:       SMG.L     CB9.R          healthy - spPure  0.151831313562652
+17:       SMG.L    CB10.R          healthy - spPure  0.119667954552058
+18:       SMG.L   VERMIS9          healthy - spPure  0.180889637906191
+19:      PCUN.L   VERMIS9          healthy - spPure  0.151293175504726
+20:     CRUS1.L     CB8.R          healthy - spPure  0.225727094983863
+21:     CRUS1.L     CB9.R          healthy - spPure  0.191115756336699
+22:     CRUS1.R     CB8.R          healthy - spPure  0.198775136747583
+23:     CRUS2.L     CB9.R          healthy - spPure  0.190056900422304
+24:       SPG.L  VERMIS10          healthy - spADHD 0.0886409387163777
+25:      PCUN.L  VERMIS10          healthy - spADHD    0.1031663987882
+26:      CB7b.R  VERMIS10          healthy - spADHD  0.105031587965192
+27:  IFGoperc.L     ACG.R           spADHD - spPure  0.208624119984286
+28: IFGtriang.R     CB9.R           spADHD - spPure   0.15287253963406
+29:    SFGmed.R     SMG.R           spADHD - spPure  0.230709538248093
+30:    SFGmed.R     CB8.R           spADHD - spPure  0.150753186222269
+31:       HIP.L     PHG.L           spADHD - spPure  0.183467828696989
+32:       HIP.L     STG.L           spADHD - spPure  0.154503114627825
+33:       HIP.R     STG.L           spADHD - spPure   0.14727041381885
+34:       ITG.L    CB7b.L           spADHD - spPure  0.188679140605821
+35:       ITG.L     CB8.L           spADHD - spPure  0.217275659409379
+36:     CRUS2.L     CB8.L           spADHD - spPure  0.245064624326249
+37:     CRUS2.L     CB8.R           spADHD - spPure  0.228543175270886
+38:     CRUS2.L     CB9.R           spADHD - spPure  0.191855304752073

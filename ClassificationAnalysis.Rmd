@@ -41,6 +41,7 @@ attachFC = function(AUCResults, sampleIndexes){
 }
 ```
 
+
 ```{r}
 permutationTest = function(AUCResults, accuracy){
   originalStatus = AUCResults$status
@@ -53,6 +54,7 @@ permutationTest = function(AUCResults, accuracy){
     if(permVal > score)
       better = better + 1
   }
+  print(paste("Better: ", better))
   print(paste("Permutation p-value", better/numPermutations))
 }
 ```
@@ -96,7 +98,7 @@ results
 ```{r}
 source("SVM/computeAccuracy.R")
 # Only do SP and Control for Binary Classification (exclude SPADHD)
-sampleIndexes = AUCResults[status %in% c("SP", "Control"), which = TRUE]
+sampleIndexes = AUCResults[status %in% c("Control", "SP"), which = TRUE]
 SPvHCResults = AUCResults[sampleIndexes, ]
 kernel = "radial"
 
@@ -109,6 +111,17 @@ for(colName in colNames){
   accuracies = computeAccuracy(subsetTable, 4, kernel)
 }
 ```
+
+```{r}
+sampleIndexes = AUCResults[status %in% c("SP", "Control", "SPADHD"), which = TRUE]
+SPvHCResults = AUCResults[sampleIndexes, ]
+# SPvHCResults[status=="SPADHD"]$status = "SP"
+combined = attachFC(SPvHCResults, sampleIndexes)
+SPvHCFC = combined[[1]]
+SPvHCFCAll = combined[[2]]
+permutationTest(SPvHCFCAll, .6136)
+```
+
 
 
 ```{r}

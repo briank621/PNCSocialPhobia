@@ -189,14 +189,14 @@ for(i in 1:length(groupings)){
 ```{r}
 
 #saveRDS(seedResults, file=file.path(savedir, 'GAALMotion.seedResults.rds'), compress='xz')
-A.all.norm.sub = readRDS(file.path(savedir,'AAL.all.norm.sub.rds'))
-A.pos.norm.sub = readRDS(file.path(savedir,'AAL.A.pos.norm.sub.rds'))
+#A.all.norm.sub = readRDS(file.path(savedir,'CCAAL.all.norm.sub.rds'))
+#A.pos.norm.sub = readRDS(file.path(savedir,'CCAAL.A.pos.norm.sub.rds'))
 #saveRDS(fcResults, file=file.path(savedir, 'GAALMotion.fcResults.rds'), compress='xz')
 
 
 #saveRDS(seedResults, file=file.path(savedir, 'GAAL.seedResults.rds'), compress='xz')
-seedResults = readRDS(file.path(savedir, 'GAALMotion.seedResults.rds'))
-fcResults = readRDS(file.path(savedir, 'GAALMotion.fcResults.rds'))
+#seedResults = readRDS(file.path(savedir, 'CCAAL.seedResults.rds'))
+fcResults = readRDS(file.path(savedir, 'CCAAL.fcResults.rds'))
 ```
 
 

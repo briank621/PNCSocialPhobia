@@ -33,7 +33,7 @@ control$status = "Control"
 
 Look at different comorbidities
 ```{r}
-spADHD = subset[smry_soc>=3&smry_mood_cat<=2&smry_eat_cat<=2&smry_gad<=2&smry_sep<=2&smry_phb<=2&smry_pan<=2&smry_agr<=2&smry_ocd<=2&smry_ptd<=2&smry_psy_cat<=2&smry_add>=3]
+spADHD = subset[smry_soc>=3&smry_add>=3]#&smry_mood_cat<=2&smry_eat_cat<=2&smry_gad<=2&smry_sep<=2&smry_phb<=2&smry_pan<=2&smry_agr<=2&smry_ocd<=2&smry_ptd<=2&smry_psy_cat<=2&smry_add>=3]
 spADHD$status = "SPADHD"
 spSpecificPhobia = subset[smry_soc>=3&smry_phb>=3]
 spDepression = subset[smry_soc>=3&smry_dep>=3]
@@ -47,7 +47,7 @@ spODD = subset[smry_soc>=3&smry_odd>=3]
 
 ```{r}
 combined = rbind(sp, control, spADHD)
-combined = combined[,.(bblid, SUBJID, Sex, age_at_cnb, smry_soc, status)]
+combined = combined[,.(bblid, SUBJID, Sex, age_at_cnb, smry_soc, smry_add, status)]
 fwrite(combined, file="./scores/Groups.csv")
 ```
 

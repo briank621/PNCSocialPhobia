@@ -1,0 +1,9 @@
+"","metric","group","diff","pvalue"
+"1","E.local","healthy - spPure","0.00194522813189968",0.0432
+"2","Lp","healthy - spPure","0.00777175517007889",0.0432
+"3","Cp","healthy - spPure","0.00445824707173292",0.0432
+"4","Lp.norm","healthy - spPure","0.00359445005831821",0.0432
+"5","E.local","spADHD - spPure","0.00184929266227241",0.036
+"6","Lp","spADHD - spPure","0.0100238518236658",0.036
+"7","Cp","spADHD - spPure","0.00429955753433953",0.036
+"8","Lp.norm","spADHD - spPure","0.00446584641162018",0.036

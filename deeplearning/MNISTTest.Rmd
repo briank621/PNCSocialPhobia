@@ -79,6 +79,10 @@ cnn_history = cnn_model %>% fit(
   validation_split = 0.2
 )
 ```
+```{r}
+predictions2 = cnn_model %>% predict(x_train)
+```
+
 
 ## Evaluate Accuracy
 

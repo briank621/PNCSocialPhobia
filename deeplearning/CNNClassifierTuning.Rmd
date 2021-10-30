@@ -6,10 +6,37 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library("keras")
+library('kerastuneR')
 library("caret")
 library("ROSE")
 ```
 
+```{r}
+build_model = function(hp){
+
+  cnn_model = keras_model_sequential() %>%
+  layer_conv_1d(hp$Int('filters', min_value=4, max_value=8, step=4), kernel_size = 3, padding="same", activation="relu", input_shape=input_shape) %>% 
+  layer_conv_1d(hp$Int('filters', min_value=4, max_value=8, step=4), kernel_size = 3, padding="same", activation = "relu") %>% 
+  # layer_locally_connected_1d(filters = 16, kernel_size = 3, activation="relu") %>% 
+  layer_max_pooling_1d(pool_size = 2) %>% 
+  layer_dropout(rate = 0.2) %>% 
+  layer_conv_1d(hp$Int('filters', min_value=4, max_value=8, step=4), kernel_size = 3, padding="same", activation = "relu") %>% 
+  layer_conv_1d(hp$Int('filters', min_value=4, max_value=8, step=4), kernel_size = 3, padding="same", activation = "relu") %>% 
+  layer_max_pooling_1d(pool_size = 2) %>% 
+  layer_dropout(rate = 0.2) %>% 
+  layer_flatten() %>% 
+  layer_dense(units = 8, activation = "relu") %>% 
+  layer_dropout(rate = 0.5) %>% 
+  layer_dense(units = 4, activation = "relu") %>% 
+  layer_dense(units = 1, activation = "sigmoid") %>% 
+  compile(
+    loss = loss_binary_crossentropy,
+    optimizer = optimizer_adam(hp$Choice('learning_rate', values=c(1e-2, 1e-3, 1e-4))),
+    metrics = c('accuracy')
+  )
+  return(cnn_model)
+}
+```
 
 ```{r}
 datadir = getwd()
@@ -20,27 +47,15 @@ batch_size = 10
 epochs = 10
 input_shape <- c(num_cols, 1)     
 
-cnn_model = keras_model_sequential() %>%
-  layer_conv_1d(filters = 32, kernel_size = 3, padding="same", activation="relu", input_shape=input_shape) %>% 
-  layer_conv_1d(filters=32, kernel_size = 3, padding="same", activation = "relu") %>% 
-  # layer_locally_connected_1d(filters = 16, kernel_size = 3, activation="relu") %>% 
-  layer_max_pooling_1d(pool_size = 2) %>% 
-  layer_dropout(rate = 0.2) %>% 
-  
-  layer_conv_1d(filters=32, kernel_size = 3, padding="same", activation = "relu") %>% 
-  layer_conv_1d(filters=32, kernel_size = 3, padding="same", activation = "relu") %>% 
-  layer_max_pooling_1d(pool_size = 2) %>% 
-  layer_dropout(rate = 0.2) %>% 
-  layer_flatten() %>% 
-  layer_dense(units = 8, activation = "relu") %>% 
-  layer_dropout(rate = 0.5) %>% 
-  layer_dense(units = 4, activation = "relu") %>% 
-  layer_dense(units = 1, activation = "sigmoid")
-
-
 nfolds=4
 set.seed(21)
 subdata <- createFolds(alldata$status, nfolds)
+
+tuner = RandomSearch(
+    build_model,
+    objective = 'val_accuracy',
+    max_trials = 5,
+    executions_per_trial = 3)
 
 results = NULL
 for (p in 1:4){
@@ -57,23 +72,28 @@ for (p in 1:4){
   data.rose = ROSE(status~., data=alldata[-temp1,], p=.55, hmult.majo=.25, hmult.mino=.25, seed=321)$data
   # table(data.rose$status)
   
-  x_train = data.rose[, names(data.rose) != "status"]
+  # split data again for validation
+  validationFolds = createFolds(data.rose$status, nfolds)
+  validationFold = validationFolds$Fold1
+  data.training.train = ROSE(status~., data=data.rose[-validationFold,], p=.55, hmult.majo=.25, hmult.mino=.25,seed=321)$data
+  data.training.validation = data.rose[validationFold,]
+  
+  x_train = data.training.train[, names(data.training.train) != "status"]
   num_cols = ncol(x_train)
-  x_train <- array_reshape(unlist(x_train), c(nrow(x_train), num_cols, 1))
+  x_train = array_reshape(unlist(x_train), c(nrow(x_train), num_cols, 1))
+  y_train = as.numeric(as.factor(data.training.train$status)) - 1
+  
+  x_val = data.training.validation[, names(data.training.validation) != "status"]
+  num_cols = ncol(x_val)
+  x_val = array_reshape(unlist(x_val), c(nrow(x_val), num_cols, 1))
+  y_val = as.numeric(as.factor(data.training.validation$status)) - 1
 
-  cnn_model %>% compile(
-    loss = loss_binary_crossentropy,
-    optimizer = optimizer_adam(learning_rate = 0.005),
-    metrics = c('accuracy')
-  )
-  
-  cnn_history = cnn_model %>% fit(
-    x_train, as.numeric(data.rose$status) - 1,
-    batch_size = batch_size,
+  tuner %>% fit_tuner(x_train, y_train,
     epochs = epochs,
-    validation_split = 0.2
-  )
-  
+    batch_size = batch_size,
+    validation_data = list(x_val,y_val))
+
+  browser()
  
   testData = alldata[temp1, names(alldata) != "status"]
   testData = array_reshape(unlist(testData), c(nrow(testData), num_cols, 1))

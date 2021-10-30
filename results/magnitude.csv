@@ -1,0 +1,39 @@
+"","r1","r2","group","diff","pvalue"
+"1","ORBsupmed.L","PHG.R","healthy - spPure + spADHD","0.100731965558379",4e-04
+"2","CAL.L","CAL.R","healthy - spPure + spADHD","0.165745276738908",5e-04
+"3","SPG.L","VERMIS10","healthy - spPure + spADHD","0.0849629006317924",2e-04
+"4","SMG.R","CB3.L","healthy - spPure + spADHD","0.0983663720442288",6e-04
+"5","PCUN.L","VERMIS10","healthy - spPure + spADHD","0.0905340817187139",9e-04
+"6","CB10.R","VERMIS1_2","healthy - spPure + spADHD","0.10232784476629",7e-04
+"7","SMA.R","DCG.R","healthy - spPure","0.186460893495749",5e-04
+"8","OLF.R","CB7b.R","healthy - spPure","0.138256481826096",5e-04
+"9","OLF.R","CB8.R","healthy - spPure","0.125139234200576",8e-04
+"10","HIP.R","STG.L","healthy - spPure","0.134874796363177",8e-04
+"11","SOG.L","VERMIS4_5","healthy - spPure","0.167877661840367",4e-04
+"12","SOG.R","VERMIS4_5","healthy - spPure","0.166971260333169",1e-04
+"13","IPL.R","CB8.R","healthy - spPure","0.154800810401535",8e-04
+"14","SMG.L","CRUS1.R","healthy - spPure","0.159899538618641",6e-04
+"15","SMG.L","CB9.L","healthy - spPure","0.155969300200168",6e-04
+"16","SMG.L","CB9.R","healthy - spPure","0.151831313562652",3e-04
+"17","SMG.L","CB10.R","healthy - spPure","0.119667954552058",9e-04
+"18","SMG.L","VERMIS9","healthy - spPure","0.180889637906191",0
+"19","PCUN.L","VERMIS9","healthy - spPure","0.151293175504726",4e-04
+"20","CRUS1.L","CB8.R","healthy - spPure","0.225727094983863",2e-04
+"21","CRUS1.L","CB9.R","healthy - spPure","0.191115756336699",5e-04
+"22","CRUS1.R","CB8.R","healthy - spPure","0.198775136747583",8e-04
+"23","CRUS2.L","CB9.R","healthy - spPure","0.190056900422304",2e-04
+"24","SPG.L","VERMIS10","healthy - spADHD","0.0886409387163777",2e-04
+"25","PCUN.L","VERMIS10","healthy - spADHD","0.1031663987882",8e-04
+"26","CB7b.R","VERMIS10","healthy - spADHD","0.105031587965192",8e-04
+"27","IFGoperc.L","ACG.R","spADHD - spPure","0.208624119984286",5e-04
+"28","IFGtriang.R","CB9.R","spADHD - spPure","0.15287253963406",9e-04
+"29","SFGmed.R","SMG.R","spADHD - spPure","0.230709538248093",2e-04
+"30","SFGmed.R","CB8.R","spADHD - spPure","0.150753186222269",8e-04
+"31","HIP.L","PHG.L","spADHD - spPure","0.183467828696989",2e-04
+"32","HIP.L","STG.L","spADHD - spPure","0.154503114627825",3e-04
+"33","HIP.R","STG.L","spADHD - spPure","0.14727041381885",1e-04
+"34","ITG.L","CB7b.L","spADHD - spPure","0.188679140605821",7e-04
+"35","ITG.L","CB8.L","spADHD - spPure","0.217275659409379",4e-04
+"36","CRUS2.L","CB8.L","spADHD - spPure","0.245064624326249",4e-04
+"37","CRUS2.L","CB8.R","spADHD - spPure","0.228543175270886",9e-04
+"38","CRUS2.L","CB9.R","spADHD - spPure","0.191855304752073",6e-04
