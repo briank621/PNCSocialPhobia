@@ -301,3 +301,32 @@ covars.fmri = covars.fmri[! SUBJID %in% badSubjects]
 ```{r}
 dt.g.all.sub.graph[,.(minComp = min(max.comp), meanComp = mean(max.comp), stdComp = sd(max.comp)),by=.(threshold)]
 ```
+
+## Write outputs to a CSV File
+
+```{r}
+# go through all edges get a count
+
+dt = data.table(status=covars.fmri$status, Lp=AUCResults$Lp, Cp=AUCResults$Cp, E.local=AUCResults$E.local)
+dt[,Lp.norm:= AUCResults$Lp.norm]
+
+count = 1
+
+for(i in 1:4){
+    uncorrected = fcResults[[i]]$uncorrected
+    for(j in 1:length(uncorrected)){
+        pairName = paste('Pair', count, sep='')
+        count = count + 1
+        r1i = uncorrected$region1Index
+        r2i = uncorrected$region2Index
+        fcValue = A.pos.norm.sub[[1]][r1i, r2i, ]
+        dt[,(pairName):= fcValue]
+    }
+}
+
+# go through all topological measures
+
+
+
+```
+
