@@ -309,7 +309,7 @@ dt.g.all.sub.graph[,.(minComp = min(max.comp), meanComp = mean(max.comp), stdCom
 # go through all edges get a count
 
 dt = data.table(status=covars.fmri$status, Lp=AUCResults$Lp, Cp=AUCResults$Cp, E.local=AUCResults$E.local)
-dt[,Lp.norm:= AUCResults$Lp.norm]
+# dt[,Lp.norm:= AUCResults$Lp.norm]
 
 count = 1
 seen = array(0, dim=c(116,116))
@@ -335,7 +335,19 @@ for(i in 1:4){
 # Implicated vertices are eNodal: 49, 50 and local: 70
 # This is using the singleAUCResults code from abova
 
-dt = merge(dt, singleAUCResults[, c("SUBJID", "E.nodal_SOG.L", "E.nodal_SOG.R", "E.local_PCL.R")], by=c("SUBJID"))
+# dt = cbind(dt, singleAUCResults[, -4:-1])
 
+# Write results to CSV
+costdir = paste(datadir, "/cost_sensitive/", sep="")
+
+# Need to sort by statuses and then print them out
+filePath = paste(costdir, "ControlSPADHDT.csv", sep="")
+write.csv(dt[status == "SPADHD" | status == "Control"], filePath)
+
+filePath = paste(costdir, "ControlSPT.csv", sep="")
+write.csv(dt[status == "SP" | status == "Control"], filePath)
+
+filePath = paste(costdir, "SPSPADHDT.csv", sep="")
+write.csv(dt[status == "SP" | status == "SPADHD"], filePath)
 ```
 

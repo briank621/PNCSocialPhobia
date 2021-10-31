@@ -5,7 +5,7 @@ library(ROSE)
 
 # alldata = read.table(file=paste(getwd(),"/Documents/quant/PNCSocialPhobia/cost_sensitive/SPvHCFCAll_data.csv", sep='')
                      # , sep=',',header = T)
-alldata = read.table(file=paste("/home/brian","/Documents/quant/PNCSocialPhobia/cost_sensitive/ControlSPCombined.csv", sep='')
+alldata = read.table(file=paste("/home/brian","/Documents/quant/PNCSocialPhobia/cost_sensitive/ControlSPT.csv", sep='')
                      , sep=',',header = T)
 alldata$status = as.factor(alldata$status)
 
