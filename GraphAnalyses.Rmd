@@ -349,5 +349,7 @@ write.csv(dt[status == "SP" | status == "Control"], filePath)
 
 filePath = paste(costdir, "SPSPADHDT.csv", sep="")
 write.csv(dt[status == "SP" | status == "SPADHD"], filePath)
+
+# TODO: Try and get the edges the same as the other one
 ```
 
